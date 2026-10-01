@@ -109,6 +109,22 @@ class TestArabizi:
     def test_character_map_fallback(self, arabic: str, expected: str) -> None:
         assert text.arabizi(arabic) == expected
 
+    @pytest.mark.parametrize(
+        ("arabic", "expected"),
+        [
+            ("الكرهبة", "elkarhba"),  # article + a lexicon word
+            ("الدار", "eldar"),  # article + character map
+            ("المدينة", "elmdina"),
+            ("الواحد", "elwa7d"),  # the stem's first letter is still word-initial
+        ],
+    )
+    def test_definite_article_is_el_not_al(self, arabic: str, expected: str) -> None:
+        assert text.arabizi(arabic) == expected
+
+    def test_short_word_starting_with_alef_lam_is_not_an_article(self) -> None:
+        # Needs two letters after the article, so `الو` (hello) is left alone.
+        assert text.arabizi("الو") == "alou"
+
     def test_hamza_is_a_word_initially_and_2_elsewhere(self) -> None:
         assert text.arabizi_word("أكل").startswith("a")
         assert "2" in text.arabizi_word("مأكلة")

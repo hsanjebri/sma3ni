@@ -13,7 +13,7 @@ ml/
 ├── resources/            # loanwords.tsv, arabizi_map.tsv, arabizi_lexicon.tsv (small, versioned)
 ├── src/sma3ni_ml/
 │   ├── text.py           # normalize(), arabizi(), lint() — implements TRANSCRIPTION_GUIDELINES.md
-│   ├── data.py           # manifests: load, validate, hash, summarize (+ dataset loaders, Phase 2)
+│   ├── data.py           # manifests + `sma3ni-manifest` CLI (+ dataset loaders, Phase 2)
 │   ├── augment.py        # noise, speed, opus re-encode                     (Phase 2, not written)
 │   ├── metrics.py        # WER, CER, code-switch F1, slice reports
 │   ├── benchmark.py      # CLI: run models on a manifest
@@ -47,6 +47,21 @@ uv run python -m sma3ni_ml.benchmark --config configs/benchmark.yaml
 uv run python -m sma3ni_ml.train --config configs/train_turbo_lora.yaml     # Phase 2
 uv run python -m sma3ni_ml.export --checkpoint <path> --format ct2          # Phase 3
 ```
+
+Building a test set (Phase 1), in order:
+```bash
+# 1. transcribers fill a TSV: id, text, speaker, region, gender, consent[, duration]
+uv run sma3ni-manifest build --metadata clips.tsv --audio-dir data/own/audio \
+    --split test --out data/test_v1/manifest.jsonl     # durations via ffprobe
+# 2. schema, missing audio, guideline violations, speaker leaks, consent
+uv run sma3ni-manifest validate data/test_v1/manifest.jsonl
+# 3. 10% of clips transcribed twice — target is under 10% WER between passes
+uv run sma3ni-manifest agreement pass_a.tsv pass_b.tsv
+# 4. freeze: paste the printed line into RESULTS.md and the hash into the config
+uv run sma3ni-manifest hash data/test_v1/manifest.jsonl
+```
+`validate` exits non-zero when something is wrong, so it belongs in any data
+script. Run it again after any manifest edit and before freezing.
 Model backends are imported lazily, so `uv run pytest` needs neither a GPU nor
 the `asr` extra. Keep it that way: new tests must run on the core install.
 

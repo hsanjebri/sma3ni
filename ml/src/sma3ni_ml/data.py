@@ -1,4 +1,4 @@
-"""Manifests: load, validate, hash and summarize the datasets.
+"""Manifests: build, load, validate, hash and summarize the datasets.
 
 Manifest format is defined in `docs/ML_PLAN.md` - one JSON object per line:
 
@@ -9,6 +9,14 @@ Manifest format is defined in `docs/ML_PLAN.md` - one JSON object per line:
 `manifest_sha256()` is what freezes the test set: the hash in `ml/RESULTS.md`
 must match, otherwise the numbers in that file describe a different test set.
 
+The Phase 1 collection workflow (also `uv run sma3ni-manifest --help`):
+
+    sma3ni-manifest build --audio-dir data/own/audio --metadata clips.tsv \
+        --split test --out data/test_v1/manifest.jsonl
+    sma3ni-manifest validate data/test_v1/manifest.jsonl
+    sma3ni-manifest agreement pass_a.tsv pass_b.tsv
+    sma3ni-manifest hash data/test_v1/manifest.jsonl   # -> paste into RESULTS.md
+
 External dataset loaders (LinTO, TuniSpeech, TEDxTN, Common Voice) are NOT here
 yet on purpose: `ml/AGENTS.md` requires each loader to record its verified
 license in the docstring, so they land in Phase 2 once each license is checked.
@@ -18,6 +26,7 @@ adding its loader (redistribution and model-release terms, not just research use
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 from collections import Counter
@@ -26,6 +35,9 @@ from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
+
+from sma3ni_ml.metrics import cer, wer
+from sma3ni_ml.text import lint
 
 Split = Literal["train", "dev", "test"]
 Consent = Literal["eval", "train", "release"]
@@ -203,3 +215,350 @@ def summarize(entries: Sequence[ManifestEntry]) -> ManifestSummary:
             sorted(Counter(entry.duration_bucket for entry in entries).items())
         ),
     )
+
+
+# --------------------------------------------------------------------------- #
+# Collection workflow (Phase 1): build, validate, agreement, hash
+# --------------------------------------------------------------------------- #
+
+AUDIO_EXTENSIONS = (".opus", ".ogg", ".m4a", ".aac", ".mp3", ".wav", ".flac")
+
+# Columns a transcriber fills in; `text` and `id` are the only required ones.
+METADATA_COLUMNS = ("id", "text", "speaker", "region", "gender", "consent", "duration", "audio")
+
+
+def read_metadata(path: str | Path) -> list[dict[str, str]]:
+    """Read the transcriber's TSV: a header row, then one row per clip.
+
+    Exported straight from a spreadsheet. Unknown columns are ignored so the
+    sheet can carry notes; `consent` is comma or pipe separated.
+    """
+    path = Path(path)
+    rows: list[dict[str, str]] = []
+    with path.open(encoding="utf-8-sig") as handle:
+        lines = [line.rstrip("\n") for line in handle if line.strip() and not line.startswith("#")]
+    if not lines:
+        raise ValueError(f"{path}: no rows")
+    header = [column.strip().lower() for column in lines[0].split("\t")]
+    if "id" not in header:
+        raise ValueError(f"{path}: header needs an 'id' column, got {header}")
+    for line_number, line in enumerate(lines[1:], start=2):
+        values = line.split("\t")
+        if len(values) > len(header):
+            raise ValueError(
+                f"{path}:{line_number}: {len(values)} values for {len(header)} columns"
+            )
+        row = {name: value.strip() for name, value in zip(header, values, strict=False)}
+        rows.append(row)
+    return rows
+
+
+def probe_duration(audio_path: str | Path) -> float:
+    """Audio duration in seconds, via ffprobe (ships with ffmpeg)."""
+    import shutil
+    import subprocess
+
+    if shutil.which("ffprobe") is None:
+        raise RuntimeError(
+            "ffprobe not found - install ffmpeg, or put a 'duration' column in the "
+            "metadata and pass --no-probe"
+        )
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "csv=p=0",
+            str(audio_path),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0 or not result.stdout.strip():
+        raise RuntimeError(f"ffprobe failed on {audio_path}: {result.stderr.strip()}")
+    return float(result.stdout.strip())
+
+
+def find_audio(audio_dir: str | Path, clip_id: str) -> Path:
+    """Locate `<clip_id>.<ext>` in `audio_dir`."""
+    audio_dir = Path(audio_dir)
+    for extension in AUDIO_EXTENSIONS:
+        candidate = audio_dir / f"{clip_id}{extension}"
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(f"no audio for {clip_id} in {audio_dir} (tried {AUDIO_EXTENSIONS})")
+
+
+def build_manifest(
+    rows: Sequence[dict[str, str]],
+    *,
+    audio_dir: str | Path,
+    split: Split,
+    source: str = "own",
+    probe: bool = True,
+    audio_root: str | Path = ".",
+) -> list[ManifestEntry]:
+    """Turn transcriber rows plus a folder of audio into manifest entries.
+
+    `audio` paths are written relative to `audio_root` so the manifest stays
+    portable between machines.
+    """
+    audio_root = Path(audio_root).resolve()
+    entries: list[ManifestEntry] = []
+    for row in rows:
+        clip_id = row["id"]
+        audio_path = Path(row["audio"]) if row.get("audio") else find_audio(audio_dir, clip_id)
+        duration = float(row["duration"]) if row.get("duration") else None
+        if duration is None:
+            if not probe:
+                raise ValueError(f"{clip_id}: no duration column and probing is off")
+            duration = probe_duration(audio_path)
+        consent = [
+            value.strip()
+            for value in row.get("consent", "").replace("|", ",").split(",")
+            if value.strip()
+        ]
+        try:
+            relative_audio = audio_path.resolve().relative_to(audio_root)
+        except ValueError:
+            relative_audio = audio_path
+        entries.append(
+            ManifestEntry.model_validate(
+                {
+                    "id": clip_id,
+                    "audio": relative_audio.as_posix(),
+                    "text": row["text"],
+                    "duration": duration,
+                    "speaker": row.get("speaker") or clip_id,
+                    "split": row.get("split") or split,
+                    "source": row.get("source") or source,
+                    "region": row.get("region") or None,
+                    "gender": row.get("gender") or None,
+                    "consent": consent,
+                    "noise": row.get("noise") or None,
+                }
+            )
+        )
+    return entries
+
+
+class ValidationReport(BaseModel):
+    """Everything wrong with a manifest, gathered in one pass."""
+
+    missing_audio: list[str] = Field(default_factory=list)
+    lint_issues: dict[str, list[str]] = Field(default_factory=dict)
+    speakers_in_two_splits: list[str] = Field(default_factory=list)
+    missing_consent: dict[str, list[str]] = Field(default_factory=dict)
+
+    @property
+    def ok(self) -> bool:
+        return not (
+            self.missing_audio
+            or self.lint_issues
+            or self.speakers_in_two_splits
+            or self.missing_consent
+        )
+
+    def describe(self) -> str:
+        """Human-readable problem list, one per line."""
+        lines: list[str] = []
+        for clip_id in self.missing_audio:
+            lines.append(f"missing audio: {clip_id}")
+        for clip_id, issues in sorted(self.lint_issues.items()):
+            for issue in issues:
+                lines.append(f"transcript {clip_id}: {issue}")
+        for speaker in self.speakers_in_two_splits:
+            lines.append(f"speaker in more than one split: {speaker}")
+        for purpose, clip_ids in sorted(self.missing_consent.items()):
+            lines.append(f"missing '{purpose}' consent: {', '.join(clip_ids)}")
+        return "\n".join(lines)
+
+
+# A split's clips must carry at least this consent (docs/ML_PLAN.md).
+CONSENT_FOR_SPLIT: dict[str, Consent] = {"test": "eval", "dev": "eval", "train": "train"}
+
+
+def validate(
+    entries: Sequence[ManifestEntry], *, audio_root: str | Path = ".", check_audio: bool = True
+) -> ValidationReport:
+    """Check a manifest against the guidelines and the ML plan's data rules."""
+    audio_root = Path(audio_root)
+    report = ValidationReport()
+
+    if check_audio:
+        report.missing_audio = [
+            entry.id for entry in entries if not (audio_root / entry.audio).exists()
+        ]
+
+    for entry in entries:
+        issues = [str(issue) for issue in lint(entry.text)]
+        if issues:
+            report.lint_issues[entry.id] = issues
+
+    report.speakers_in_two_splits = check_speaker_separation(entries)
+
+    for split, purpose in CONSENT_FOR_SPLIT.items():
+        in_split = [entry for entry in entries if entry.split == split]
+        missing = check_consent(in_split, purpose)
+        if missing:
+            report.missing_consent[purpose] = missing
+
+    return report
+
+
+def read_texts(path: str | Path) -> dict[str, str]:
+    """`{clip id: transcript}` from a manifest (.jsonl) or a metadata TSV."""
+    path = Path(path)
+    if path.suffix == ".jsonl":
+        return {entry.id: entry.text for entry in load_manifest(path)}
+    rows = read_metadata(path)
+    return {row["id"]: row.get("text", "") for row in rows}
+
+
+class AgreementReport(BaseModel):
+    """Inter-transcriber agreement, measured as WER between two passes."""
+
+    clips: int
+    wer: float
+    cer: float
+    only_in_first: list[str] = Field(default_factory=list)
+    only_in_second: list[str] = Field(default_factory=list)
+
+    @property
+    def meets_target(self) -> bool:
+        """The guidelines' section 8 target: under 10% disagreement."""
+        return self.wer < 0.10
+
+    def describe(self) -> str:
+        verdict = "OK" if self.meets_target else "ABOVE the 10% target"
+        return (
+            f"{self.clips} clips double-transcribed: WER {self.wer:.1%}, "
+            f"CER {self.cer:.1%} - {verdict}"
+        )
+
+
+def agreement(first: dict[str, str], second: dict[str, str]) -> AgreementReport:
+    """Agreement between two transcription passes of the same clips.
+
+    Section 8 of the guidelines: 10% of clips get a second transcriber, and the
+    WER between the two passes is the measure. A high number means the
+    guidelines are ambiguous, not that a transcriber is bad.
+    """
+    shared = sorted(set(first) & set(second))
+    refs = [first[clip_id] for clip_id in shared]
+    hyps = [second[clip_id] for clip_id in shared]
+    return AgreementReport(
+        clips=len(shared),
+        wer=wer(refs, hyps) if shared else 0.0,
+        cer=cer(refs, hyps) if shared else 0.0,
+        only_in_first=sorted(set(first) - set(second)),
+        only_in_second=sorted(set(second) - set(first)),
+    )
+
+
+def _command_build(args: argparse.Namespace) -> int:
+    rows = read_metadata(args.metadata)
+    entries = build_manifest(
+        rows,
+        audio_dir=args.audio_dir,
+        split=args.split,
+        source=args.source,
+        probe=not args.no_probe,
+        audio_root=args.audio_root,
+    )
+    write_manifest(entries, args.out)
+    summary = summarize(entries)
+    print(f"wrote {args.out}: {summary.describe()}")
+    report = validate(entries, audio_root=args.audio_root)
+    if not report.ok:
+        print("\nproblems found - fix these before freezing:")
+        print(report.describe())
+        return 1
+    return 0
+
+
+def _command_validate(args: argparse.Namespace) -> int:
+    entries = load_manifest(args.manifest)
+    summary = summarize(entries)
+    print(summary.describe())
+    print(f"splits: {summary.by_split}")
+    print(f"regions: {summary.by_region}")
+    print(f"gender: {summary.by_gender}")
+    print(f"durations: {summary.by_duration_bucket}")
+    report = validate(entries, audio_root=args.audio_root, check_audio=not args.no_audio_check)
+    if report.ok:
+        print("\nno problems found")
+        return 0
+    print("\nproblems:")
+    print(report.describe())
+    return 0 if args.warn_only else 1
+
+
+def _command_hash(args: argparse.Namespace) -> int:
+    entries = load_manifest(args.manifest, split=args.split)
+    summary = summarize(entries)
+    print(f"sha256: {summary.sha256}")
+    print(f"clips: {summary.clips}  hours: {summary.hours:.2f}  speakers: {summary.speakers}")
+    print("\nFor the RESULTS.md header:")
+    print(
+        f"**Frozen test set:** `{args.name}` - sha256: `{summary.sha256}` - "
+        f"clips: {summary.clips} - hours: {summary.hours:.2f} - speakers: {summary.speakers}"
+    )
+    return 0
+
+
+def _command_agreement(args: argparse.Namespace) -> int:
+    report = agreement(read_texts(args.first), read_texts(args.second))
+    if report.clips == 0:
+        print("no clips in common between the two passes")
+        return 1
+    print(report.describe())
+    for clip_id in report.only_in_first:
+        print(f"  only in {args.first}: {clip_id}")
+    for clip_id in report.only_in_second:
+        print(f"  only in {args.second}: {clip_id}")
+    return 0 if report.meets_target else 1
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="sma3ni-manifest", description=__doc__)
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    build = subparsers.add_parser("build", help="metadata TSV + audio folder -> manifest.jsonl")
+    build.add_argument("--metadata", required=True, help="TSV with id/text/speaker/... columns")
+    build.add_argument("--audio-dir", required=True, help="folder holding <id>.<ext> files")
+    build.add_argument("--out", required=True, help="manifest to write")
+    build.add_argument("--split", default="test", choices=["train", "dev", "test"])
+    build.add_argument("--source", default="own")
+    build.add_argument("--audio-root", default=".", help="paths are written relative to this")
+    build.add_argument("--no-probe", action="store_true", help="trust the metadata duration column")
+    build.set_defaults(handler=_command_build)
+
+    check = subparsers.add_parser("validate", help="schema, audio, transcripts, splits, consent")
+    check.add_argument("manifest")
+    check.add_argument("--audio-root", default=".")
+    check.add_argument("--no-audio-check", action="store_true")
+    check.add_argument("--warn-only", action="store_true", help="report problems but exit 0")
+    check.set_defaults(handler=_command_validate)
+
+    digest = subparsers.add_parser("hash", help="content hash to freeze a test set")
+    digest.add_argument("manifest")
+    digest.add_argument("--split", default=None, choices=["train", "dev", "test"])
+    digest.add_argument("--name", default="test_v1")
+    digest.set_defaults(handler=_command_hash)
+
+    agree = subparsers.add_parser("agreement", help="WER between two transcription passes")
+    agree.add_argument("first")
+    agree.add_argument("second")
+    agree.set_defaults(handler=_command_agreement)
+
+    args = parser.parse_args(argv)
+    return int(args.handler(args))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

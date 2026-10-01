@@ -24,6 +24,10 @@ dev = [
     "ruff>=0.6",
 ]
 
+[project.scripts]
+sma3ni-manifest = "sma3ni_ml.data:main"
+sma3ni-benchmark = "sma3ni_ml.benchmark:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

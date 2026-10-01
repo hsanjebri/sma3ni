@@ -5,8 +5,9 @@ Darija has no standard spelling. **Consistency matters more than "correctness"**
 ## 1. Script
 - **Darija / Arabic words → Arabic script.**
 - **French / English words → Latin script, standard spelling**, lowercase.
-  - `نمشي للـ réunion متاع demain` ✅
+  - `نمشي لل réunion متاع demain` ✅
   - `نمشي لل ريونيون` ❌
+  - No tatweel to attach the article to a Latin word (`للـ réunion` ❌) — see §2.
 - **Fully integrated loanwords** that are pronounced the Tunisian way and used as Darija (e.g. كرهبة, تلفون, بلاصة) → Arabic script. Keep a shared list in `ml/resources/loanwords.tsv` and extend it by PR.
 
 ## 2. Arabic spelling rules
@@ -28,9 +29,8 @@ Darija has no standard spelling. **Consistency matters more than "correctness"**
   | of / belonging to | متاع |
 - Negation `ما...ش`: write `ما` separately, `ش` attached: `ما نجمش`.
 - Definite article attached: `الكرهبة`.
+- **No tatweel, including before a Latin word**: write `لل réunion`, not `للـ réunion`. Attaching the article to a Latin word is impossible anyway, and one rule with no exceptions is what keeps two transcribers in agreement. `text.normalize()` strips tatweel and `text.lint()` flags it.
 - Extend this table only by PR, never ad hoc.
-
-`TODO(question)`: §1's example writes the article before a French word with a tatweel (`للـ réunion`), which this section forbids. `text.normalize()` currently strips it, so that example normalizes to `لل réunion` and `text.lint()` flags the tatweel. Either allow tatweel in exactly that position or change the example — decide before freezing v1.
 
 ## 3. Numbers
 - Write numbers as **digits**: `3 ساعات`, `25 دينار`, `rendez-vous 14h`.
@@ -45,8 +45,8 @@ Darija has no standard spelling. **Consistency matters more than "correctness"**
 | Music / noise | ignore |
 | Fillers (ممم، اه، euh) | **omit** |
 | Repetitions / false starts | keep only the final complete word |
-- Tags are **removed before WER scoring**.
-- `TODO(question)`: this covers the event tags above. The §6 placeholders (`[اسم]`, `[رقم]`, `[عنوان]`) stand in for words that *were* spoken, so `text.normalize_for_scoring()` keeps them as single tokens — the model is expected to be wrong about them exactly once. Confirm that is the convention we want.
+- Tags are **removed before WER scoring**. This covers the event tags above.
+- The §6 placeholders (`[اسم]`, `[رقم]`, `[عنوان]`) are **kept** as single tokens: they stand in for words that *were* spoken, so the model is expected to be wrong about each one exactly once. Dropping them instead would turn a correctly-transcribed name into an insertion error, which is the same cost with a less honest reference.
 
 ## 5. Punctuation & case
 - Training targets: light punctuation allowed (، ؟ .).
@@ -84,10 +84,10 @@ Also: `ة` → `a`, `ى` → `a`, and the Tunisian `ڨ`/`گ` → `g`.
 
 **Short vowels.** Arabic script does not write them, so a letter map alone gives `brcha`, not `barcha`, and `3slama`, not `3aslema` — including for all three examples above. Frequent words therefore get a whole-word entry in `ml/resources/arabizi_lexicon.tsv`, which is consulted before the letter map. Extend that file by PR, same as this one.
 
-**Known limitation.** The definite article comes out as `al-` (`الكرهبة` → `alkarhba`) where Tunisians usually write `el-`. Article handling needs a rule, not more lexicon entries. `TODO(question)`: decide the rule before the Arabizi toggle ships (Phase 4).
+**Definite article.** `ال` becomes `el`, as Darija says it: `الكرهبة` → `elkarhba`, `الدار` → `eldar`. The rule needs at least two letters after the article, so a short word that merely starts with those letters (`الو` → `alou`) is left to the letter map. The stem's first letter still counts as word-initial, so `الواحد` → `elwa7d`.
 
 ## 8. Quality control
-- 10% of clips transcribed by two people; report agreement (WER between them). Target < 10%.
+- 10% of clips transcribed by two people; report agreement (WER between them). Target < 10%. Measure it with `uv run sma3ni-manifest agreement pass_a.tsv pass_b.tsv`, which normalizes both passes first — so punctuation and hamza choices never count as disagreement, only real differences do.
 - Disagreements → discussion → update this file (new version) if needed.
 
 ## Tooling
@@ -95,10 +95,17 @@ Also: `ة` → `a`, `ى` → `a`, and the Tunisian `ڨ`/`گ` → `g`.
 - `normalize()` — the canonical written form (§1–§3): no diacritics, no tatweel, ASCII digits, lowercase Latin. Used for training targets and API output.
 - `normalize_for_scoring()` — adds the scoring-only steps (§2 hamza folding, §4 tag removal, §5 punctuation removal). Every metric runs on this.
 - `arabizi()` — §7 output.
-- `lint()` — checks a hand transcript against the rules above; run it on every new transcript before the clip enters a manifest: `uv run python -c "from sma3ni_ml.text import lint; print(*lint(open('t.txt',encoding='utf-8').read()), sep='\n')"`.
+- `lint()` — checks a hand transcript against the rules above.
+
+Run the checks over a whole batch instead of clip by clip:
+```bash
+cd ml
+uv run sma3ni-manifest validate data/test_v1/manifest.jsonl   # lint + data rules
+uv run sma3ni-manifest agreement pass_a.tsv pass_b.tsv        # §8 agreement
+```
 
 Changing this file changes every metric. Update `text.py` and its tests in the same change, and re-run the benchmark before comparing to older `RESULTS.md` rows.
 
 ## Changelog
 - v1 (draft): initial rules
-- v1 (draft, 2026-10-01): §7 gained the positional rules, the short-vowel lexicon and the article limitation; two open questions recorded (tatweel before Latin words in §2, PII placeholders in scoring in §4). No rule changed.
+- v1 (draft, 2026-10-01): §7 gained the positional rules, the short-vowel lexicon and the `el` article rule. Three ambiguities resolved, each to the reading that needs no exceptions: no tatweel anywhere (§1 example corrected, §2), §6 placeholders kept when scoring (§4), `ال` → `el` (§7). No existing rule reversed.

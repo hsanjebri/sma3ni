@@ -64,6 +64,8 @@ MSA_TO_DARIJA = {
 _HAMZA_FORMS = frozenset("أإآءئؤ")
 _VOWEL_AFTER_WAW = frozenset("اىي")
 _VOWEL_AFTER_YA = frozenset("او")
+_ARTICLE = "ال"
+_ARTICLE_LATIN = "el"
 
 
 def normalize(text: str) -> str:
@@ -174,14 +176,24 @@ def loanwords() -> dict[str, str]:
 def arabizi_word(word: str) -> str:
     """Transliterate one Arabic-script word (section 7).
 
-    Lexicon first, then the character map with these positional rules: a hamza
-    form is `a` word-initially and `2` elsewhere; `و` is `w` word-initially or
-    before a vowel letter and `ou` otherwise; `ي` is `y` word-initially or
-    before a vowel letter and `i` otherwise.
+    Lexicon first, then the definite article, then the character map with these
+    positional rules: a hamza form is `a` word-initially and `2` elsewhere; `و`
+    is `w` word-initially or before a vowel letter and `ou` otherwise; `ي` is
+    `y` word-initially or before a vowel letter and `i` otherwise.
     """
     lexicon = arabizi_lexicon()
     if word in lexicon:
         return lexicon[word]
+
+    prefix = ""
+    # Darija says the definite article "el", not the MSA "al" - so `الكرهبة` is
+    # `elkarhba`. Needs at least two letters after it, which keeps short words
+    # that merely start with those letters (`الو`) out of the rule.
+    if word.startswith(_ARTICLE) and len(word) >= len(_ARTICLE) + 2:
+        prefix = _ARTICLE_LATIN
+        word = word[len(_ARTICLE) :]
+        if word in lexicon:
+            return prefix + lexicon[word]
 
     charmap = arabizi_charmap()
     out: list[str] = []
@@ -199,7 +211,7 @@ def arabizi_word(word: str) -> str:
             out.append(latin_initial if initial else latin)
         else:
             out.append(char)
-    return "".join(out)
+    return prefix + "".join(out)
 
 
 def arabizi(text: str) -> str:

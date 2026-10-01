@@ -35,5 +35,11 @@ mobile/ios/
 mobile/android/
 dist/
 
+# Editors
+.idea/
+.vscode/
+*.swp
+
 # OS
 .DS_Store
+Thumbs.db

@@ -39,7 +39,7 @@ Tunisians send huge numbers of WhatsApp voice notes. People often can't listen: 
 
 **v0.2**
 - Arabizi output
-- Summary for notes > 30s
+- Summary for notes > 20 s (threshold lives in `API.md`, which is the contract)
 - Local history + search (on device)
 - Correct-this-transcript (opt-in data donation)
 

@@ -26,6 +26,8 @@ Best possible transcription of **real Tunisian WhatsApp voice notes**: noisy, fa
  "speaker": "spk_017", "region": "sfax", "gender": "f", "source": "own", "consent": ["eval","train"], "split": "test"}
 ```
 
+Manifests are built and checked with `sma3ni-manifest` (see `ml/AGENTS.md`): `build` from a transcriber TSV plus a folder of audio, `validate` for schema / missing audio / guideline violations / speaker leaks / missing consent, `agreement` for the double-transcription check, `hash` to freeze. The hash is content-based and order-independent, so reformatting the file never invalidates a frozen set — only the data does.
+
 ## Normalization
 One function, `sma3ni_ml.text.normalize()`, implements `TRANSCRIPTION_GUIDELINES.md` and is used for training targets, predictions before scoring, and the server output. Tests cover every rule in the guidelines.
 

@@ -6,7 +6,7 @@ Thanks for helping make Tunisian speech recognition better 🇹🇳
 - **Donate voice notes** (with consent) through the in-app "Help improve Sma3ni" option, or record a few clips for the test set.
 - **Fix transcripts** using the "Correct" button in the app.
 - **Code**: pick an issue labeled `good first issue`.
-- **Transcribe data**: follow `docs/TRANSCRIPTION_GUIDELINES.md` exactly.
+- **Transcribe data**: follow `docs/TRANSCRIPTION_GUIDELINES.md` exactly, then check your batch with `cd ml && uv run sma3ni-manifest validate <manifest>` before handing it over.
 
 ## Dev setup
 See the Quick start in `README.md` and the `AGENTS.md` in each folder.
