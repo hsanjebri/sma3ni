@@ -1,0 +1,24 @@
+# Arabizi overrides for frequent words whose pronunciation carries short vowels
+# that Arabic script does not write (so the letter map alone cannot produce them).
+# Looked up before the character map. Extend by PR only (see TRANSCRIPTION_GUIDELINES.md §7).
+arabic	arabizi
+شنوة	chnowa
+برشا	barcha
+عسلامة	3aslema
+توا	tawa
+علاش	3lech
+وين	win
+نحب	n7eb
+باهي	bahi
+متاع	mte3
+كيفاش	kifech
+شكون	chkoun
+بش	bech
+ديما	dima
+يزي	yezzi
+صحة	sa7a
+ما	ma
+موش	mouch
+هكا	hakka
+زادة	zeda
+ياخي	ya5i

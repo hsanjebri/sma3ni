@@ -10,6 +10,10 @@ models/
 checkpoints/
 wandb/
 
+# Generated benchmark reports (contain transcripts of our test clips)
+ml/reports/
+reports/
+
 # Secrets
 .env
 *.keystore

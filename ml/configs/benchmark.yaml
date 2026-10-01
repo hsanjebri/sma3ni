@@ -1,0 +1,57 @@
+# Phase 1 benchmark — zero-shot baselines on the frozen voice-note test set.
+# Run: uv run python -m sma3ni_ml.benchmark --config configs/benchmark.yaml
+# Needs the model extra: uv sync --extra asr
+
+manifest: data/test_v1/manifest.jsonl
+# Fill in once the test set is frozen (sma3ni_ml.data.manifest_sha256) and copy
+# the same value into ml/RESULTS.md. While it is "TBD" the check is skipped.
+manifest_sha256: TBD
+split: test
+audio_root: .
+
+# Null = all clips. Use --limit 10 for a smoke run.
+limit: null
+seed: 1337
+output_dir: reports
+
+# Slice reports (docs/ML_PLAN.md). `noise` is also supported once clips carry it.
+slices:
+  - region
+  - gender
+  - duration_bucket
+  - source
+min_slice_utterances: 10
+
+models:
+  - name: whisper-large-v3
+    backend: faster_whisper
+    model: large-v3
+    options:
+      device: cuda
+      compute_type: int8_float16
+      language: ar
+      beam_size: 5
+
+  - name: whisper-large-v3-turbo
+    backend: faster_whisper
+    model: deepdml/faster-whisper-large-v3-turbo-ct2
+    options:
+      device: cuda
+      compute_type: int8_float16
+      language: ar
+      beam_size: 5
+
+  # TODO(question): pick the exact Hugging Face ids for the public Tunisian and
+  # multi-dialect fine-tunes listed in docs/ML_PLAN.md, and check each model's
+  # license before reporting numbers from it.
+  # - name: tunisian-whisper-finetune
+  #   backend: transformers
+  #   model: <hf-org>/<model-id>
+  #   options:
+  #     device: 0
+  #     language: ar
+
+  # Score an external system's output without running it here.
+  # - name: some-hosted-api
+  #   backend: predictions
+  #   model: reports/some-hosted-api.hyp.jsonl

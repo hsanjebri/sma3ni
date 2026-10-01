@@ -1,0 +1,17 @@
+# Loanwords pronounced the Tunisian way and written in ARABIC script
+# (TRANSCRIPTION_GUIDELINES.md §1). Used by text.lint() to flag transcripts that
+# write them in Latin letters instead. Extend by PR.
+# arabic<TAB>latin_variants (comma separated)<TAB>gloss
+arabic	latin_variants	gloss
+كرهبة	karhba,karhaba,karhba	car
+تلفون	telfoun,tilifoun,telephone	phone
+بلاصة	blasa,plassa,blassa	place / seat
+سبيطار	sbitar,sbytar	hospital
+فرشيطة	farchita,forchita	fork
+طوموبيل	tomobil,tomobile	car
+كوزينة	kouzina,cuisina	kitchen
+سوردي	sordi,soldi	money
+بوسطة	bosta,posta	post office
+تريسيتي	trisiti,trisity	electricity
+ماكينة	makina,machina	machine
+بيسين	bisin,bissine	swimming pool

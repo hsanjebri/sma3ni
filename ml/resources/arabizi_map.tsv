@@ -1,0 +1,45 @@
+# Arabic letter -> Arabizi base mapping (TRANSCRIPTION_GUIDELINES.md §7).
+# char<TAB>latin<TAB>latin_initial   (latin_initial optional; "-" = same as latin)
+# Positional letters (و ي and the hamza family) also get the rules in text.py.
+char	latin	latin_initial
+ا	a	-
+أ	2	a
+إ	2	a
+آ	2	a
+ء	2	-
+ئ	2	a
+ؤ	2	a
+ب	b	-
+ت	t	-
+ث	th	-
+ج	j	-
+ح	7	-
+خ	5	-
+د	d	-
+ذ	dh	-
+ر	r	-
+ز	z	-
+س	s	-
+ش	ch	-
+ص	s	-
+ض	d	-
+ط	t	-
+ظ	dh	-
+ع	3	-
+غ	gh	-
+ف	f	-
+ق	9	-
+ك	k	-
+ل	l	-
+م	m	-
+ن	n	-
+ه	h	-
+و	ou	w
+ي	i	y
+ى	a	-
+ة	a	-
+ڨ	g	-
+گ	g	-
+پ	p	-
+ڤ	v	-
+ژ	j	-
