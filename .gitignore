@@ -1,0 +1,35 @@
+# Data & models — never commit
+data/
+**/data/
+models/
+*.opus
+*.ogg
+*.m4a
+*.wav
+*.mp3
+checkpoints/
+wandb/
+
+# Secrets
+.env
+*.keystore
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+
+# Python
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Mobile
+node_modules/
+.expo/
+mobile/ios/
+mobile/android/
+dist/
+
+# OS
+.DS_Store
