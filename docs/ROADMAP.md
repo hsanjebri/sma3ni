@@ -32,9 +32,9 @@ Running them side by side does not add hours. It removes waiting: while clips co
 **Exit:** WER clearly better than best baseline on frozen test set.
 
 ## Phase 3 — API (track B, weeks 1–4) 🚧 current
-- [ ] `server/` skeleton: config, error envelope, `GET /v1/health`, CI
-- [ ] Audio: ffmpeg decode, size/duration limits, temp files deleted in `finally`
-- [ ] `POST /v1/transcribe` with an off-the-shelf model (CPU `small` for dev); text through `sma3ni_ml.text`
+- [x] `server/` skeleton: config, error envelope, `GET /v1/health`, CI
+- [x] Audio: ffmpeg decode, size/duration limits, temp files deleted in `finally`
+- [x] `POST /v1/transcribe` with an off-the-shelf model (CPU `small` for dev); text through `sma3ni_ml.text`
 - [ ] `POST /v1/install`, bearer token, daily rate limit
 - [ ] Dockerfile; deploy to serverless GPU
 - [ ] Summary / translation / replies via LLM
