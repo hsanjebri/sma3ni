@@ -9,7 +9,7 @@ import tempfile
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr, field_validator, model_validator
+from pydantic import AliasChoices, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     token_secret: SecretStr | None = None
     # One `req-*` directory per request lives here and is deleted in `finally`.
     audio_tmp_dir: Path = Path(tempfile.gettempdir()) / "sma3ni-audio"
+    # The deployed commit, shown by /v1/health. Render sets RENDER_GIT_COMMIT.
+    git_commit: str | None = Field(
+        default=None, validation_alias=AliasChoices("GIT_COMMIT", "RENDER_GIT_COMMIT")
+    )
 
     @field_validator("token_secret")
     @classmethod

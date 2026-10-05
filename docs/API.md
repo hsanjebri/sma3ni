@@ -54,7 +54,7 @@ Response `202 { "accepted": true }`.
 Deletes all donated data for this token. `204`.
 
 ## `GET /v1/health`
-`{ "status": "ok", "model_version": "..." }`
+`{ "status": "ok", "model_version": "...", "commit": "889a06b" }`. No token needed. `commit` is the deployed git commit, `null` when unknown.
 
 ## Errors
 ```json

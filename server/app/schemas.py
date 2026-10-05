@@ -32,6 +32,7 @@ class ErrorResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     model_version: str
+    commit: str | None = None
 
 
 class Script(StrEnum):

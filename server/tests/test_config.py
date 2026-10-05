@@ -20,6 +20,13 @@ def test_every_setting_is_documented_in_env_example() -> None:
         assert field.upper() in documented, f"{field.upper()} missing from .env.example"
 
 
+def test_render_sets_the_commit(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("GIT_COMMIT", raising=False)
+    monkeypatch.setenv("RENDER_GIT_COMMIT", "889a06b0123")
+
+    assert Settings(_env_file=None).git_commit == "889a06b0123"
+
+
 def test_settings_come_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MODEL_VERSION", "whisper-darija-turbo-2026.10.1")
 
