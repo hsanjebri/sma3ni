@@ -2,6 +2,8 @@
 name = "sma3ni-ml"
 version = "0.1.0"
 description = "Benchmark, fine-tune and export Tunisian Darija speech models"
+license = "Apache-2.0"
+authors = [{ name = "Hsan Jebri" }]
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.7",
@@ -29,7 +31,8 @@ sma3ni-manifest = "sma3ni_ml.data:main"
 sma3ni-benchmark = "sma3ni_ml.benchmark:main"
 
 [build-system]
-requires = ["hatchling"]
+# 1.27 is the first hatchling that reads an SPDX `license` string (PEP 639).
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]

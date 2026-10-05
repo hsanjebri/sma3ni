@@ -23,5 +23,8 @@ See the Quick start in `README.md` and the `AGENTS.md` in each folder.
 - Only use audio from people who **explicitly agreed** to it being used for training.
 - Remove names, phone numbers and other personal info from transcripts before sharing them (see `docs/PRIVACY.md`).
 
+## License
+Sma3ni is licensed under [Apache-2.0](LICENSE). By opening a pull request you agree that your contribution is licensed under the same terms (Apache-2.0, section 5).
+
 ## Code of conduct
 Be kind, be patient, and remember most contributors are volunteers.

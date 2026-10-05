@@ -21,6 +21,8 @@ sma3ni/
 ├── AGENTS.md            # Instructions for AI coding agents (read first)
 ├── CLAUDE.md            # Points to AGENTS.md
 ├── CONTRIBUTING.md
+├── LICENSE              # Apache-2.0
+├── NOTICE               # Copyright / attribution notice
 ├── docs/
 │   ├── PRD.md                       # Product requirements
 │   ├── ARCHITECTURE.md              # System design
@@ -50,6 +52,6 @@ See each folder's `AGENTS.md` / `README.md` for details.
 🚧 Phase 1: benchmark. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## License
-- Code: Apache-2.0
+- Code: [Apache-2.0](LICENSE), © 2026 Hsan Jebri. Redistributions must keep the [NOTICE](NOTICE) file.
 - Models: released on Hugging Face under a license compatible with their training data (see `docs/ML_PLAN.md`)
 - Not affiliated with WhatsApp or Meta.
