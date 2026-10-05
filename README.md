@@ -49,7 +49,7 @@ sma3ni/
 See each folder's `AGENTS.md` / `README.md` for details.
 
 ## Status
-🚧 Phase 1: benchmark. See [docs/ROADMAP.md](docs/ROADMAP.md).
+🚧 Two tracks in parallel: Phase 1 (benchmark) and Phase 3 (API). See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## License
 - Code: [Apache-2.0](LICENSE), © 2026 Hsan Jebri. Redistributions must keep the [NOTICE](NOTICE) file.
