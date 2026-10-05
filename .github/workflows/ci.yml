@@ -43,6 +43,10 @@ jobs:
           enable-cache: true
           cache-dependency-glob: server/uv.lock
 
+      # Audio tests decode synthetic clips: they need the real ffmpeg/ffprobe.
+      - name: Install ffmpeg
+        run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends ffmpeg
+
       # No GPU and no model download: ASR is mocked in unit tests (server/AGENTS.md).
       - run: uv sync --frozen
 

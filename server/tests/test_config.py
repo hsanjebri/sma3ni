@@ -23,3 +23,10 @@ def test_settings_come_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setenv("MODEL_VERSION", "whisper-darija-turbo-2026.10.1")
 
     assert Settings(_env_file=None).model_version == "whisper-darija-turbo-2026.10.1"
+
+
+def test_empty_values_fall_back_to_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    # `AUDIO_TMP_DIR=` copied from .env.example must not become Path("") (the cwd).
+    monkeypatch.setenv("AUDIO_TMP_DIR", "")
+
+    assert Settings(_env_file=None).audio_tmp_dir == Settings.model_fields["audio_tmp_dir"].default

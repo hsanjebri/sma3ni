@@ -31,7 +31,7 @@ Voice notes are private conversations, often including people who never agreed t
 ## Engineering rules
 - Never log request bodies, transcript text, or audio.
 - Sentry / error reporting: scrub request bodies; no breadcrumbs with text.
-- Temp files in a dedicated directory; startup job clears leftovers.
+- Temp files in a dedicated directory (`AUDIO_TMP_DIR`, one `req-*` dir per request, removed in `finally`); a startup sweep clears leftovers older than 10 minutes. In production, point it at a RAM-backed tmpfs so audio never touches disk.
 - TLS only; HSTS.
 - Secrets in environment variables / secret manager.
 

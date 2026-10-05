@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from pathlib import Path
 
 import httpx
 import pytest
@@ -16,9 +17,11 @@ def anyio_backend() -> str:
 
 
 @pytest.fixture
-def settings() -> Settings:
+def settings(tmp_path: Path) -> Settings:
     # `_env_file=None`: a developer's server/.env must not leak into the tests.
-    return Settings(_env_file=None, model_version="test-model")
+    return Settings(
+        _env_file=None, model_version="test-model", audio_tmp_dir=tmp_path / "audio-tmp"
+    )
 
 
 @pytest.fixture
