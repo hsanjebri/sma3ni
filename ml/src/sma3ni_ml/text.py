@@ -21,9 +21,10 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from functools import lru_cache
-from pathlib import Path
+from importlib.resources import files
 
-RESOURCES = Path(__file__).resolve().parents[2] / "resources"
+# Inside the package, so a wheel install (the server's image) ships the tables too.
+RESOURCES = files("sma3ni_ml") / "resources"
 
 # Section 4 - removed before WER scoring.
 NON_SPEECH_TAGS = frozenset({"[ضحك]", "[غير مفهوم]"})

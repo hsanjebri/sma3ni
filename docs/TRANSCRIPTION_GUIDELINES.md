@@ -8,7 +8,7 @@ Darija has no standard spelling. **Consistency matters more than "correctness"**
   - `نمشي لل réunion متاع demain` ✅
   - `نمشي لل ريونيون` ❌
   - No tatweel to attach the article to a Latin word (`للـ réunion` ❌) — see §2.
-- **Fully integrated loanwords** that are pronounced the Tunisian way and used as Darija (e.g. كرهبة, تلفون, بلاصة) → Arabic script. Keep a shared list in `ml/resources/loanwords.tsv` and extend it by PR.
+- **Fully integrated loanwords** that are pronounced the Tunisian way and used as Darija (e.g. كرهبة, تلفون, بلاصة) → Arabic script. Keep a shared list in `ml/src/sma3ni_ml/resources/loanwords.tsv` and extend it by PR.
 
 ## 2. Arabic spelling rules
 - No diacritics (tashkeel), no tatweel (ـ).
@@ -82,7 +82,7 @@ Three letters above are one-to-many, so `sma3ni_ml.text.arabizi()` resolves them
 | ي | `y` word-initially or before ا / و, else `i` |
 Also: `ة` → `a`, `ى` → `a`, and the Tunisian `ڨ`/`گ` → `g`.
 
-**Short vowels.** Arabic script does not write them, so a letter map alone gives `brcha`, not `barcha`, and `3slama`, not `3aslema` — including for all three examples above. Frequent words therefore get a whole-word entry in `ml/resources/arabizi_lexicon.tsv`, which is consulted before the letter map. Extend that file by PR, same as this one.
+**Short vowels.** Arabic script does not write them, so a letter map alone gives `brcha`, not `barcha`, and `3slama`, not `3aslema` — including for all three examples above. Frequent words therefore get a whole-word entry in `ml/src/sma3ni_ml/resources/arabizi_lexicon.tsv`, which is consulted before the letter map. Extend that file by PR, same as this one.
 
 **Definite article.** `ال` becomes `el`, as Darija says it: `الكرهبة` → `elkarhba`, `الدار` → `eldar`. The rule needs at least two letters after the article, so a short word that merely starts with those letters (`الو` → `alou`) is left to the letter map. The stem's first letter still counts as word-initial, so `الواحد` → `elwa7d`.
 

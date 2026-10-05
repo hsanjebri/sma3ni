@@ -10,8 +10,9 @@ Data preparation, benchmarking, fine-tuning and export of speech models. Python 
 ml/
 ├── pyproject.toml
 ├── configs/              # YAML configs (benchmark.yaml, train_*.yaml)
-├── resources/            # loanwords.tsv, arabizi_map.tsv, arabizi_lexicon.tsv (small, versioned)
 ├── src/sma3ni_ml/
+│   ├── resources/        # loanwords.tsv, arabizi_map.tsv, arabizi_lexicon.tsv (small, versioned;
+│   │                     #   inside the package so the server's wheel install ships them)
 │   ├── text.py           # normalize(), arabizi(), lint() — implements TRANSCRIPTION_GUIDELINES.md
 │   ├── data.py           # manifests + `sma3ni-manifest` CLI (+ dataset loaders, Phase 2)
 │   ├── augment.py        # noise, speed, opus re-encode                     (Phase 2, not written)
