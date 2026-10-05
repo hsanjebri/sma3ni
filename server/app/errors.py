@@ -30,20 +30,27 @@ STATUS = {
 class ApiError(Exception):
     """Raise anywhere in a request to answer with the contract's error envelope."""
 
-    def __init__(self, code: ErrorCode, message: str) -> None:
+    def __init__(
+        self, code: ErrorCode, message: str, headers: dict[str, str] | None = None
+    ) -> None:
         super().__init__(code.value)
         self.code = code
         self.message = message
+        self.headers = headers
 
 
-def error_response(code: ErrorCode, message: str) -> JSONResponse:
+def error_response(
+    code: ErrorCode, message: str, headers: dict[str, str] | None = None
+) -> JSONResponse:
     body = ErrorResponse(error=ErrorBody(code=code, message=message))
-    return JSONResponse(status_code=STATUS[code], content=body.model_dump(mode="json"))
+    return JSONResponse(
+        status_code=STATUS[code], content=body.model_dump(mode="json"), headers=headers
+    )
 
 
 async def _handle_api_error(_: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, ApiError)
-    return error_response(exc.code, exc.message)
+    return error_response(exc.code, exc.message, exc.headers)
 
 
 async def _handle_validation_error(_: Request, exc: Exception) -> JSONResponse:

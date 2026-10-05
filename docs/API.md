@@ -3,9 +3,9 @@
 Base URL: `https://api.sma3ni.app` (placeholder). All endpoints under `/v1`. JSON responses, UTF-8.
 
 ## Auth
-- `POST /v1/install` → `{ "token": "..." }`, called once on first launch. Anonymous, no personal data.
-- All other requests: `Authorization: Bearer <token>`.
-- Rate limit: 60 transcriptions/day per token (configurable). `429` when exceeded.
+- `POST /v1/install` → `{ "token": "..." }`, called once on first launch. Anonymous, no personal data. The token is opaque: store it and send it, never parse it.
+- All other requests except `GET /v1/health`: `Authorization: Bearer <token>`. Missing or invalid → `401 unauthorized`: the app calls `/v1/install` again and retries once (every token becomes invalid when the server's signing key rotates).
+- Rate limit: 60 successful transcriptions per token per UTC day (configurable); failed requests don't count. `429 rate_limited` when exceeded, with `Retry-After` set to the seconds left until the next UTC day.
 
 ## `POST /v1/transcribe`
 Multipart form:

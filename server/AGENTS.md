@@ -16,13 +16,13 @@ server/
 │   ├── config.py          # pydantic-settings, all env vars
 │   ├── schemas.py         # request/response models (match API.md exactly)
 │   ├── errors.py          # ApiError → error envelope; unhandled errors logged by type only
-│   ├── routes/            # health.py, transcribe.py; feedback.py, install.py (not written)
+│   ├── routes/            # health.py, install.py, transcribe.py; feedback.py (not written)
 │   ├── services/
 │   │   ├── audio.py       # upload → size/format/duration checks → 16 kHz mono WAV; temp dir per request
 │   │   ├── asr.py         # faster-whisper, same decode options as the ml benchmark
 │   │   ├── text.py        # calls sma3ni_ml.text (path dependency on ../ml), never a copy
 │   │   └── llm.py         # summary / translate / replies         (not written)
-│   └── security.py        # token auth, rate limit                (not written)
+│   └── security.py        # signed install tokens, daily quota per token
 └── tests/                 # pytest + httpx AsyncClient; small fixture audio only
 ```
 
@@ -32,6 +32,7 @@ Modules marked *not written* arrive with their step in `docs/ROADMAP.md` (Phase 
 - **Privacy:** audio in a temp dir, deleted in `finally`; never log text or audio; scrub Sentry events. Add a test that asserts no temp files remain after a request (success and failure).
 - **Errors:** raise `ApiError(ErrorCode.X, message)`; the HTTP status comes from the code (`errors.STATUS`, the table in `API.md`). Never put user text in a message. Anything else that escapes a route becomes `internal_error`, and only its exception type is logged, because exception messages can quote a transcript.
 - Validate size/duration **before** running the model. `services.audio.prepared_audio()` does both and is the only way audio enters the server: it gives each request a `req-*` dir under `AUDIO_TMP_DIR` and removes it in `finally`. It blocks (copy + ffmpeg), so call it from a worker thread.
+- **Auth:** every endpoint except `health` and `install` takes `token_id: TokenId`; anything that costs GPU time runs inside `daily_quota()`, which only counts successful requests. Never log a token.
 - Model loaded once at startup (lifespan); expose `model_version` in responses and `/v1/health`.
 - **Decode like the benchmark:** `services/asr.DECODE_OPTIONS` matches `sma3ni_ml.benchmark.FasterWhisperBackend`, so `ml/RESULTS.md` describes what users get. Change both together, and only on benchmark evidence.
 - Heavy work (ASR) off the event loop (`run_in_threadpool` or a worker), with a concurrency limit per GPU.
@@ -39,7 +40,7 @@ Modules marked *not written* arrive with their step in `docs/ROADMAP.md` (Phase 
 - Tests must not need a GPU: mock `asr.py` in unit tests; one optional integration test with `tiny` model marked `@pytest.mark.slow`.
 
 ## Env vars (see `.env.example`)
-`MODEL_PATH`, `MODEL_VERSION`, `DEVICE`, `COMPUTE_TYPE`, `MAX_AUDIO_SECONDS`, `MAX_UPLOAD_MB`, `AUDIO_TMP_DIR`, `ASR_CONCURRENCY`, `RATE_LIMIT_PER_DAY`, `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`, `SENTRY_DSN`, `DONATION_BUCKET`
+`MODEL_PATH`, `MODEL_VERSION`, `DEVICE`, `COMPUTE_TYPE`, `MAX_AUDIO_SECONDS`, `MAX_UPLOAD_MB`, `AUDIO_TMP_DIR`, `ASR_CONCURRENCY`, `RATE_LIMIT_PER_DAY`, `TOKEN_SECRET`, `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`, `SENTRY_DSN`, `DONATION_BUCKET`
 
 ## System dependencies
 `ffmpeg` and `ffprobe` on `PATH`, for the server and for the tests (they decode synthetic clips).

@@ -57,7 +57,10 @@ def anyio_backend() -> str:
 def settings(tmp_path: Path) -> Settings:
     # `_env_file=None`: a developer's server/.env must not leak into the tests.
     return Settings(
-        _env_file=None, model_version="test-model", audio_tmp_dir=tmp_path / "audio-tmp"
+        _env_file=None,
+        model_version="test-model",
+        audio_tmp_dir=tmp_path / "audio-tmp",
+        token_secret="test-secret-test-secret-test-secret-",
     )
 
 
@@ -75,9 +78,23 @@ def app(settings: Settings, transcriber: FakeTranscriber) -> FastAPI:
 
 
 @pytest.fixture
-async def client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
+async def anon_client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
+    """No token: for the endpoints that need none, and for auth failures."""
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client
+
+
+@pytest.fixture
+async def client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
+    """An installed app: every request carries a valid token."""
+    token = app.state.token_signer.issue()
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        headers={"Authorization": f"Bearer {token}"},
+    ) as client:
         yield client
 
 

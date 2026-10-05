@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from app.config import Settings
 
@@ -30,3 +31,8 @@ def test_empty_values_fall_back_to_defaults(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setenv("AUDIO_TMP_DIR", "")
 
     assert Settings(_env_file=None).audio_tmp_dir == Settings.model_fields["audio_tmp_dir"].default
+
+
+def test_a_short_token_secret_is_refused() -> None:
+    with pytest.raises(ValidationError, match="at least 32 characters"):
+        Settings(_env_file=None, token_secret="too-short")

@@ -8,6 +8,7 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -28,5 +29,16 @@ class Settings(BaseSettings):
 
     max_audio_seconds: int = 300
     max_upload_mb: int = 25
+    rate_limit_per_day: int = 60
+    # Signs install tokens. Unset (dev only): a random key per process, so
+    # tokens stop working on restart and differ between workers.
+    token_secret: SecretStr | None = None
     # One `req-*` directory per request lives here and is deleted in `finally`.
     audio_tmp_dir: Path = Path(tempfile.gettempdir()) / "sma3ni-audio"
+
+    @field_validator("token_secret")
+    @classmethod
+    def _long_enough(cls, value: SecretStr | None) -> SecretStr | None:
+        if value is not None and len(value.get_secret_value()) < 32:
+            raise ValueError("TOKEN_SECRET must be at least 32 characters")
+        return value

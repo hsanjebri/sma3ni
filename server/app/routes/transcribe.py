@@ -12,6 +12,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app.config import Settings
 from app.schemas import Script, Segment, TranscribeResponse, TranslateTarget
+from app.security import TokenId, daily_quota
 from app.services import text
 from app.services.asr import Transcriber
 from app.services.audio import prepared_audio
@@ -25,6 +26,7 @@ LANGUAGE = "aeb"  # ISO 639-3: Tunisian Arabic
 @router.post("/transcribe")
 async def transcribe(
     request: Request,
+    token_id: TokenId,
     audio: UploadFile,
     script: Annotated[Script, Form()] = Script.ARABIC,
     # Accepted now so the contract is stable; answered by the LLM step (ROADMAP
@@ -47,7 +49,8 @@ async def transcribe(
         )
         return decoded.duration_s, [segment for segment in rendered if segment.text]
 
-    async with request.app.state.asr_slots:
+    # Quota first: an over-limit caller is answered at once instead of queueing.
+    async with daily_quota(request, token_id), request.app.state.asr_slots:
         duration_s, segments = await run_in_threadpool(run)
 
     processing_ms = round((time.perf_counter() - started) * 1000)

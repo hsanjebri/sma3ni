@@ -41,7 +41,7 @@
 - **ffmpeg** for decoding WhatsApp Opus/OGG
 - **LLM** (provider via env var) for summary / translation / replies, called only when requested
 - **Deployment:** container on a serverless GPU (Modal or RunPod) with scale-to-zero; CPU fallback with `small` model for dev
-- **Auth:** per-install anonymous token (issued on first launch) + rate limit per token
+- **Auth:** per-install anonymous token (issued on first launch, HMAC-signed so the server stores no list of installs) + daily rate limit per token
 - **Observability:** structured logs with metadata only (request id, duration, latency, model version); Sentry for errors (with content scrubbing)
 
 ### `mobile/` — app

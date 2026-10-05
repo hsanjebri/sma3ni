@@ -61,3 +61,7 @@ class TranscribeResponse(BaseModel):
     replies: list[str] | None = None
     model_version: str
     processing_ms: int
+
+
+class InstallResponse(BaseModel):
+    token: str

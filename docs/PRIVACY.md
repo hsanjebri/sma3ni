@@ -13,7 +13,8 @@ Voice notes are private conversations, often including people who never agreed t
 |---|---|---|
 | Audio | In transit (TLS) → server temp file | Deleted in `finally` right after processing |
 | Transcript / summary | Returned to phone | Phone only, until user deletes |
-| Install token | Server (rate limiting) | Until app is uninstalled / token rotated |
+| Install token | Phone only. The server signs it and checks the signature; it keeps no list of installs | Until app is uninstalled / signing key rotated |
+| Daily usage count | Server (rate limiting) | Per token, for the current UTC day only |
 | Request metadata | Server logs | 30 days: request id, duration, latency, model version, error code. **No text, no audio.** |
 
 ## LLM features
@@ -29,7 +30,7 @@ Voice notes are private conversations, often including people who never agreed t
 - `DELETE /v1/donations` removes everything linked to the token.
 
 ## Engineering rules
-- Never log request bodies, transcript text, or audio.
+- Never log request bodies, transcript text, audio, or tokens.
 - Sentry / error reporting: scrub request bodies; no breadcrumbs with text.
 - Temp files in a dedicated directory (`AUDIO_TMP_DIR`, one `req-*` dir per request, removed in `finally`); a startup sweep clears leftovers older than 10 minutes. In production, point it at a RAM-backed tmpfs so audio never touches disk, and set `TMPDIR` to the same place: Starlette buffers uploads over 1 MB in an anonymous temp file there (unlinked on Linux, closed when the request ends) before the server copies it.
 - TLS only; HSTS.
