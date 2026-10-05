@@ -12,7 +12,8 @@ so it mirrors this checkout.
 
 Settings that aren't secret are set as Space variables on every deploy (see
 VARIABLES). Secrets never pass through this script's output:
-- GROQ_API_KEY: add it yourself in the Space's Settings > Variables and secrets.
+- GROQ_API_KEY: `--set-groq-key` copies it from the environment or server/.env
+  (also after rotating it), or add it in the Space's Settings > Variables and secrets.
 - TOKEN_SECRET: generated and stored, never printed, when the Space is created.
   `--rotate-token-secret` replaces it, which logs every install out.
 """
@@ -20,11 +21,13 @@ VARIABLES). Secrets never pass through this script's output:
 from __future__ import annotations
 
 import argparse
+import os
 import secrets
 import subprocess
 import sys
 from pathlib import Path
 
+from dotenv import dotenv_values
 from huggingface_hub import CommitOperationAdd, CommitOperationDelete, HfApi
 
 REPO = Path(__file__).resolve().parents[2]
@@ -56,6 +59,15 @@ def space_files() -> dict[str, Path]:
     return files
 
 
+def groq_key() -> str:
+    key = os.environ.get("GROQ_API_KEY") or dotenv_values(REPO / "server" / ".env").get(
+        "GROQ_API_KEY"
+    )
+    if not key:
+        sys.exit("--set-groq-key: no GROQ_API_KEY in the environment or server/.env")
+    return key
+
+
 def checkout_version() -> str:
     def git(*args: str) -> str:
         return subprocess.run(
@@ -73,6 +85,11 @@ def main() -> None:
         "--rotate-token-secret",
         action="store_true",
         help="replace TOKEN_SECRET: every install gets a 401 and re-installs",
+    )
+    parser.add_argument(
+        "--set-groq-key",
+        action="store_true",
+        help="store GROQ_API_KEY (from the environment or server/.env) as a Space secret",
     )
     parser.add_argument("--dry-run", action="store_true", help="list the files, upload nothing")
     args = parser.parse_args()
@@ -92,6 +109,9 @@ def main() -> None:
     if new_space or args.rotate_token_secret:
         api.add_space_secret(args.space, "TOKEN_SECRET", secrets.token_urlsafe(48))
         print("TOKEN_SECRET set (not shown).")
+    if args.set_groq_key:
+        api.add_space_secret(args.space, "GROQ_API_KEY", groq_key())
+        print("GROQ_API_KEY set (not shown).")
 
     stale = (
         set(api.list_repo_files(args.space, repo_type="space")) - set(files) - {".gitattributes"}
@@ -114,7 +134,7 @@ def main() -> None:
     print(f"Deployed {version} ({len(files)} files, {len(stale)} removed).")
     print(f"Build logs: https://huggingface.co/spaces/{args.space}")
     print(f"API, once built: {host}/v1/health")
-    if new_space:
+    if new_space and not args.set_groq_key:
         print(
             "New Space: add the GROQ_API_KEY secret in its Settings > Variables and secrets,"
             " or the API refuses to start."

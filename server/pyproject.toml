@@ -42,5 +42,6 @@ markers = ["slow: loads a real Whisper model (downloads it on first run)"]
 dev = [
     "huggingface-hub>=1.33.0",
     "pytest>=9.1.1",
+    "python-dotenv>=1.2.4",
     "ruff>=0.16.10",
 ]
