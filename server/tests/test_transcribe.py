@@ -60,6 +60,18 @@ async def test_returns_the_normalized_transcript(
     assert_nothing_left(settings)
 
 
+async def test_a_backend_that_takes_compressed_audio_gets_the_remux(
+    client: httpx.AsyncClient, clips: dict[str, Path], transcriber: FakeTranscriber
+) -> None:
+    transcriber.needs_pcm = False
+
+    response = await client.post("/v1/transcribe", files=voice_note(clips))
+
+    assert response.status_code == 200
+    [audio] = transcriber.calls
+    assert audio.name == "audio.ogg"
+
+
 async def test_arabizi_goes_through_the_shared_implementation(
     client: httpx.AsyncClient, clips: dict[str, Path]
 ) -> None:

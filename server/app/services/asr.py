@@ -26,6 +26,13 @@ if TYPE_CHECKING:
 DECODE_OPTIONS = {"language": "ar", "task": "transcribe", "beam_size": 5}
 
 GROQ_URL = "https://api.groq.com/openai/v1/audio/transcriptions"
+# The suffixes services.audio produces.
+_CONTENT_TYPES = {
+    ".ogg": "audio/ogg",
+    ".m4a": "audio/mp4",
+    ".mp3": "audio/mpeg",
+    ".wav": "audio/wav",
+}
 
 
 @dataclass(frozen=True)
@@ -36,7 +43,11 @@ class RawSegment:
 
 
 class Transcriber(Protocol):
-    def transcribe(self, wav: Path) -> list[RawSegment]: ...
+    # True: give `transcribe` 16 kHz mono WAV. False: the original stream,
+    # remuxed without metadata (services.audio, `pcm=False`).
+    needs_pcm: bool
+
+    def transcribe(self, audio: Path) -> list[RawSegment]: ...
 
     def close(self) -> None: ...
 
@@ -50,6 +61,8 @@ def build_transcriber(settings: Settings) -> Transcriber:
 
 class WhisperTranscriber:
     """Loads the model once. `transcribe` blocks: call it from a worker thread."""
+
+    needs_pcm = True
 
     def __init__(self, settings: Settings) -> None:
         try:
@@ -66,8 +79,8 @@ class WhisperTranscriber:
             settings.model_path, device=settings.device, compute_type=settings.compute_type
         )
 
-    def transcribe(self, wav: Path) -> list[RawSegment]:
-        segments, _info = self._model.transcribe(samples(wav), **DECODE_OPTIONS)
+    def transcribe(self, audio: Path) -> list[RawSegment]:
+        segments, _info = self._model.transcribe(samples(audio), **DECODE_OPTIONS)
         # `segments` is lazy and decoding happens while iterating, so finish it
         # here, while the caller still holds the WAV.
         return [RawSegment(segment.start, segment.end, segment.text) for segment in segments]
@@ -84,6 +97,10 @@ class GroqTranscriber:
     bad API key, is our fault and becomes `500 internal_error`.
     """
 
+    # Groq decodes compressed audio itself: sending the remuxed original saves
+    # this server a decode and Groq a ~10x larger upload.
+    needs_pcm = False
+
     def __init__(self, settings: Settings, client: httpx.Client | None = None) -> None:
         if settings.groq_api_key is None:
             raise ValueError("GroqTranscriber needs GROQ_API_KEY")
@@ -91,13 +108,15 @@ class GroqTranscriber:
         self._client = client or httpx.Client(timeout=httpx.Timeout(60.0, connect=10.0))
         self._headers = {"Authorization": f"Bearer {settings.groq_api_key.get_secret_value()}"}
 
-    def transcribe(self, wav: Path) -> list[RawSegment]:
+    def transcribe(self, audio: Path) -> list[RawSegment]:
+        content_type = _CONTENT_TYPES.get(audio.suffix, "application/octet-stream")
         try:
-            with wav.open("rb") as audio:
+            with audio.open("rb") as stream:
                 response = self._client.post(
                     GROQ_URL,
                     headers=self._headers,
-                    files={"file": ("audio.wav", audio, "audio/wav")},
+                    # The name's suffix tells Groq the format.
+                    files={"file": (audio.name, stream, content_type)},
                     data={
                         "model": self._model,
                         "language": DECODE_OPTIONS["language"],

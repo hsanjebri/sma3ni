@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import io
+import json
 import os
+import subprocess
 import time
 import wave
 from pathlib import Path
@@ -12,6 +14,7 @@ from conftest import assert_nothing_left
 from app.config import Settings
 from app.errors import ApiError
 from app.schemas import ErrorCode
+from app.services import audio as audio_service
 from app.services.audio import SAMPLE_RATE, clear_leftovers, prepared_audio
 
 ACCEPTED = ["voice_note.opus", "note.m4a", "note.aac", "note.mp3", "note.wav"]
@@ -106,3 +109,57 @@ def test_clear_leftovers_only_removes_old_request_dirs(tmp_path: Path) -> None:
 
 def test_clear_leftovers_without_a_tmp_dir_is_a_no_op(tmp_path: Path) -> None:
     assert clear_leftovers(tmp_path / "missing") == 0
+
+
+def probe(path: Path) -> dict[str, str]:
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "stream=codec_name", "-of", "json", str(path)],
+        capture_output=True,
+        check=True,
+    )
+    return json.loads(result.stdout)["streams"][0]
+
+
+@pytest.mark.parametrize(
+    ("name", "suffix", "codec"),
+    [
+        ("voice_note.opus", ".ogg", "opus"),
+        ("note.m4a", ".m4a", "aac"),
+        ("note.aac", ".m4a", "aac"),  # raw ADTS goes into an m4a
+        ("note.mp3", ".mp3", "mp3"),
+        ("note.wav", ".wav", "pcm_s16le"),
+    ],
+)
+def test_without_pcm_the_stream_is_remuxed_not_decoded(
+    settings: Settings, clips: dict[str, Path], name: str, suffix: str, codec: str
+) -> None:
+    with prepared_audio(upload(clips[name]), settings, pcm=False) as audio:
+        assert audio.path.suffix == suffix
+        assert probe(audio.path)["codec_name"] == codec  # copied, not re-encoded
+        assert audio.duration_s == pytest.approx(2.0, abs=0.1)
+        assert [p.name for p in audio.path.parent.iterdir()] == [audio.path.name]
+
+    assert_nothing_left(settings)
+
+
+@pytest.mark.parametrize("pcm", [True, False], ids=["decoded", "remuxed"])
+def test_metadata_never_leaves_the_server(
+    settings: Settings, clips: dict[str, Path], pcm: bool
+) -> None:
+    assert b"SECRET-TITLE-TAG" in clips["tagged.m4a"].read_bytes()
+
+    with prepared_audio(upload(clips["tagged.m4a"]), settings, pcm=pcm) as audio:
+        assert b"SECRET-TITLE-TAG" not in audio.path.read_bytes()
+
+
+def test_a_failed_remux_falls_back_to_wav(
+    settings: Settings, clips: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The mp3 muxer cannot carry Opus, like any stream a container refuses.
+    monkeypatch.setitem(audio_service._REMUX, "ogg", ("mp3", ".mp3"))
+
+    with prepared_audio(upload(clips["voice_note.opus"]), settings, pcm=False) as audio:
+        assert audio.path.name == "audio.wav"
+        assert [p.name for p in audio.path.parent.iterdir()] == ["audio.wav"]
+
+    assert_nothing_left(settings)

@@ -18,7 +18,7 @@ Voice notes are private conversations, often including people who never agreed t
 | Request metadata | Server logs | 30 days: request id, duration, latency, model version, error code. **No text, no audio.** |
 
 ## Speech-to-text provider (free MVP)
-- With `ASR_BACKEND=groq` the decoded audio is sent to Groq's Whisper API to be transcribed; we still store nothing.
+- With `ASR_BACKEND=groq` the audio is sent to Groq's Whisper API to be transcribed; we still store nothing. ffmpeg first remuxes it with all metadata removed (titles, device or location tags), so only the sound leaves the server.
 - Groq keeps no inference data by default but may log it for up to 30 days to investigate errors or abuse, unless **Zero Data Retention** is enabled in the Groq console (Data Controls). Enable it on the account the server uses.
 - The privacy policy must name Groq as a processor while this backend is in use. Our own model (`ASR_BACKEND=local`) removes it.
 

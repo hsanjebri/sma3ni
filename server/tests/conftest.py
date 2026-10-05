@@ -23,11 +23,15 @@ CLIPS = {
     "note.wav": TONE,
     "note.flac": [*TONE, "-c:a", "flac"],  # real audio, but not a format API.md accepts
     "silent.mp4": ["-f", "lavfi", "-i", "color=c=black:s=16x16:d=1", "-c:v", "mpeg4"],
+    # Tags a phone might add: they must never leave the server.
+    "tagged.m4a": [*TONE, "-c:a", "aac", "-metadata", "title=SECRET-TITLE-TAG"],
 }
 
 
 class FakeTranscriber:
     """Stands in for Whisper: returns fixed raw segments, records each call."""
+
+    needs_pcm = True
 
     def __init__(self) -> None:
         # Raw model output: tashkeel, a tatweel and an uppercase French word,
@@ -40,9 +44,9 @@ class FakeTranscriber:
         self.calls: list[Path] = []
         self.error: Exception | None = None
 
-    def transcribe(self, wav: Path) -> list[RawSegment]:
-        assert wav.is_file(), "the decoded audio must still exist while the model runs"
-        self.calls.append(wav)
+    def transcribe(self, audio: Path) -> list[RawSegment]:
+        assert audio.is_file(), "the audio must still exist while the model runs"
+        self.calls.append(audio)
         if self.error is not None:
             raise self.error
         return self.segments

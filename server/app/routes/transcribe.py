@@ -41,7 +41,7 @@ async def transcribe(
     started = time.perf_counter()
 
     def run() -> tuple[float, list[Segment]]:
-        with prepared_audio(audio.file, settings) as decoded:
+        with prepared_audio(audio.file, settings, pcm=transcriber.needs_pcm) as decoded:
             raw = transcriber.transcribe(decoded.path)
         rendered = (
             Segment(start=round(s.start, 2), end=round(s.end, 2), text=text.render(s.text, script))

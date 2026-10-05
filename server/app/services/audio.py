@@ -1,4 +1,9 @@
-"""Audio intake: copy the upload, check it, decode it to 16 kHz mono WAV, delete it.
+"""Audio intake: copy the upload, check it, convert it for the ASR backend, delete it.
+
+`pcm=True` decodes to 16 kHz mono WAV, for a model run here. `pcm=False` keeps
+the compressed stream and only remuxes it into a clean container without
+metadata, for an API such as Groq: about 3x less CPU on a small host, an upload
+about 10x smaller, and no tags (e.g. an iPhone's location) leave the server.
 
 Each request gets its own `req-*` directory under `AUDIO_TMP_DIR`, removed in
 `finally` whatever happens. Size, format and duration are checked before
@@ -32,6 +37,17 @@ SAMPLE_RATE = 16_000
 # ffprobe `format_name` entries covering the formats in API.md:
 # opus and ogg, m4a, aac (ADTS), mp3, wav.
 ACCEPTED_FORMATS = frozenset({"ogg", "mov", "mp4", "m4a", "aac", "mp3", "wav"})
+# For a `pcm=False` remux: ffprobe format name -> (ffmpeg muxer, file suffix).
+# Raw ADTS AAC goes into an .m4a, which ASR APIs accept and ADTS isn't.
+_REMUX = {
+    "ogg": ("ogg", ".ogg"),
+    "mp3": ("mp3", ".mp3"),
+    "wav": ("wav", ".wav"),
+    "mov": ("mp4", ".m4a"),
+    "mp4": ("mp4", ".m4a"),
+    "m4a": ("mp4", ".m4a"),
+    "aac": ("mp4", ".m4a"),
+}
 
 _REQUEST_DIR_PREFIX = "req-"
 _CHUNK_BYTES = 1024 * 1024
@@ -43,13 +59,15 @@ _LEFTOVER_AGE_S = 600
 
 @dataclass(frozen=True)
 class Audio:
-    path: Path  # 16 kHz mono 16-bit WAV inside the request's temp dir
+    # Inside the request's temp dir: a 16 kHz mono 16-bit WAV (`pcm=True`), or
+    # the original stream remuxed without metadata, its suffix naming the format.
+    path: Path
     duration_s: float
 
 
 @contextmanager
-def prepared_audio(upload: BinaryIO, settings: Settings) -> Iterator[Audio]:
-    """Yield the decoded audio of one upload; its temp dir is gone once this exits.
+def prepared_audio(upload: BinaryIO, settings: Settings, *, pcm: bool = True) -> Iterator[Audio]:
+    """Yield one upload, ready for the ASR backend; its temp dir is gone once this exits.
 
     Raises `ApiError` for anything the contract names: `audio_too_large`,
     `invalid_audio`, `unsupported_format`, `audio_too_long`.
@@ -61,11 +79,10 @@ def prepared_audio(upload: BinaryIO, settings: Settings) -> Iterator[Audio]:
         # not from a client-supplied file name.
         original = workdir / "upload"
         _copy_capped(upload, original, settings.max_upload_mb)
-        duration_s = _probe(original, settings.max_audio_seconds)
-        wav = workdir / "audio.wav"
-        _decode(original, wav)
+        duration_s, formats = _probe(original, settings.max_audio_seconds)
+        ready = _decode(original, workdir) if pcm else _remux(original, workdir, formats)
         original.unlink()
-        yield Audio(path=wav, duration_s=duration_s)
+        yield Audio(path=ready, duration_s=duration_s)
     finally:
         _remove(workdir)
 
@@ -100,8 +117,8 @@ def _copy_capped(upload: BinaryIO, dest: Path, max_mb: int) -> None:
         raise ApiError(ErrorCode.INVALID_AUDIO, "The audio file is empty.")
 
 
-def _probe(path: Path, max_seconds: int) -> float:
-    """Check format, audio stream and duration; return the duration in seconds."""
+def _probe(path: Path, max_seconds: int) -> tuple[float, set[str]]:
+    """Check format, audio stream and duration; return the duration and format names."""
     result = _run(
         [
             "ffprobe",
@@ -119,7 +136,8 @@ def _probe(path: Path, max_seconds: int) -> float:
 
     info = json.loads(result.stdout)
     container = info.get("format", {})
-    if not set(container.get("format_name", "").split(",")) & ACCEPTED_FORMATS:
+    formats = set(container.get("format_name", "").split(","))
+    if not formats & ACCEPTED_FORMATS:
         raise ApiError(
             ErrorCode.UNSUPPORTED_FORMAT, "Supported formats: opus, ogg, m4a, aac, mp3, wav."
         )
@@ -132,10 +150,44 @@ def _probe(path: Path, max_seconds: int) -> float:
         raise ApiError(ErrorCode.INVALID_AUDIO, "This file has no readable duration.") from None
     if duration_s > max_seconds:
         raise ApiError(ErrorCode.AUDIO_TOO_LONG, f"Audio must be {max_seconds} seconds or less.")
-    return duration_s
+    return duration_s, formats
 
 
-def _decode(src: Path, dest: Path) -> None:
+def _remux(src: Path, workdir: Path, formats: set[str]) -> Path:
+    """Copy the first audio stream into a clean container: no re-encoding, no metadata."""
+    muxer, suffix = next(_REMUX[name] for name in sorted(formats) if name in _REMUX)
+    dest = workdir / f"audio{suffix}"
+    result = _run(
+        [
+            "ffmpeg",
+            "-nostdin",
+            "-v",
+            "error",
+            "-i",
+            str(src),
+            "-map",
+            "0:a:0",
+            "-map_metadata",
+            "-1",
+            "-c:a",
+            "copy",
+            # No encoder version tag either.
+            "-fflags",
+            "+bitexact",
+            "-f",
+            muxer,
+            str(dest),
+        ]
+    )
+    if result.returncode != 0:
+        # A stream the container can't carry as is: decoding always works.
+        dest.unlink(missing_ok=True)
+        return _decode(src, workdir)
+    return dest
+
+
+def _decode(src: Path, workdir: Path) -> Path:
+    dest = workdir / "audio.wav"
     result = _run(
         [
             "ffmpeg",
@@ -145,6 +197,10 @@ def _decode(src: Path, dest: Path) -> None:
             "-i",
             str(src),
             "-vn",
+            "-map_metadata",
+            "-1",
+            "-fflags",
+            "+bitexact",
             "-ac",
             "1",
             "-ar",
@@ -156,6 +212,7 @@ def _decode(src: Path, dest: Path) -> None:
     )
     if result.returncode != 0:
         raise ApiError(ErrorCode.INVALID_AUDIO, "This file could not be decoded.")
+    return dest
 
 
 def _run(args: list[str]) -> subprocess.CompletedProcess[bytes]:

@@ -15,7 +15,8 @@
             ▼
 ┌──────────────────────────┐
 │ Inference API (FastAPI)  │
-│  1. validate + ffmpeg →  │  16 kHz mono WAV, in temp dir
+│  1. validate + ffmpeg →  │  16 kHz mono WAV (local model) or a metadata-free
+│                          │  remux (Groq), in temp dir
 │  2. ASR model            │  faster-whisper (CTranslate2), fine-tuned;
 │                          │  free MVP: Whisper on Groq (ASR_BACKEND=groq)
 │  3. normalize text       │  per TRANSCRIPTION_GUIDELINES.md

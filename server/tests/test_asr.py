@@ -82,6 +82,22 @@ def test_groq_request_and_segments(groq_settings: Settings, wav: Path) -> None:
         assert part in body, part
 
 
+def test_groq_gets_the_format_from_the_file_name(groq_settings: Settings, tmp_path: Path) -> None:
+    note = tmp_path / "audio.ogg"
+    note.write_bytes(b"OggS fake-opus")
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json=GROQ_REPLY)
+
+    groq(groq_settings, handler).transcribe(note)
+
+    body = seen[0].read()
+    assert b'filename="audio.ogg"' in body
+    assert b"Content-Type: audio/ogg" in body
+
+
 @pytest.mark.parametrize(
     ("status", "headers", "retry_after"),
     [(429, {"retry-after": "7"}, "7"), (503, {}, None), (500, {}, None)],
@@ -122,12 +138,20 @@ def test_groq_rejecting_our_key_is_our_bug(groq_settings: Settings, wav: Path) -
 
 
 @pytest.mark.slow
-def test_real_groq(settings: Settings, clips: dict[str, Path]) -> None:
-    """Calls Groq for real. Run with GROQ_API_KEY set: `pytest -m slow`."""
+@pytest.mark.parametrize(
+    "name", ["voice_note.opus", "note.m4a", "note.aac", "note.mp3", "note.wav"]
+)
+def test_real_groq_accepts_every_remux(
+    settings: Settings, clips: dict[str, Path], name: str
+) -> None:
+    """Calls Groq for real, as production does. Needs GROQ_API_KEY: `pytest -m slow`."""
     if not os.environ.get("GROQ_API_KEY"):
         pytest.skip("GROQ_API_KEY not set")
     real = with_groq(settings, os.environ["GROQ_API_KEY"])
-    with prepared_audio(io.BytesIO(clips["voice_note.opus"].read_bytes()), real) as audio:
-        segments = GroqTranscriber(real).transcribe(audio.path)
+    transcriber = GroqTranscriber(real)
+    with prepared_audio(
+        io.BytesIO(clips[name].read_bytes()), real, pcm=transcriber.needs_pcm
+    ) as audio:
+        segments = transcriber.transcribe(audio.path)
 
     assert isinstance(segments, list)  # a tone has no words to get right
