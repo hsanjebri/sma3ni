@@ -41,7 +41,7 @@
 - **faster-whisper** with the exported model; model loaded once at startup
 - **ffmpeg** for decoding WhatsApp Opus/OGG
 - **LLM** (provider via env var) for summary / translation / replies, called only when requested
-- **Deployment:** container on a serverless GPU (Modal or RunPod) with scale-to-zero; CPU fallback with `small` model for dev
+- **Deployment:** one container (`server/Dockerfile`). Free MVP: a Hugging Face CPU Space with `ASR_BACKEND=groq` (`server/deploy/hf_space.py`). With our own model: the same container on a serverless GPU (Modal or RunPod) with scale-to-zero. Dev: CPU with the `small` model
 - **Auth:** per-install anonymous token (issued on first launch, HMAC-signed so the server stores no list of installs) + daily rate limit per token
 - **Observability:** structured logs with metadata only (request id, duration, latency, model version); Sentry for errors (with content scrubbing)
 
@@ -63,7 +63,7 @@
 | ASR base model | Whisper large-v3-turbo (server), whisper-small (on-device) | Best fine-tuned dialect results; turbo is fast |
 | Fine-tuning | LoRA first, full fine-tune if budget allows | Cheap, one GPU |
 | Serving runtime | faster-whisper / CTranslate2 | ~4× faster than HF pipeline, int8 |
-| Hosting | Serverless GPU | Pay per use, scale to zero |
+| Hosting | Free MVP: Hugging Face Space + Groq Whisper; then serverless GPU | $0 until our own model needs a GPU; then pay per use, scale to zero |
 | Mobile | Expo + native share extensions | One UI codebase, native where required |
 | No backend DB for content | — | Privacy + simplicity |
 

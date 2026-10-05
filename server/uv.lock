@@ -902,6 +902,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "huggingface-hub" },
     { name = "pytest" },
     { name = "ruff" },
 ]
@@ -921,6 +922,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "huggingface-hub", specifier = ">=1.33.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "ruff", specifier = ">=0.16.10" },
 ]

@@ -9,7 +9,10 @@ FastAPI inference service: decode audio, run ASR, normalize, optional LLM post-p
 ```
 server/
 ├── pyproject.toml
-├── Dockerfile                                                   (not written)
+├── Dockerfile             # build from the repo root (needs ml/); also what the HF Space builds
+├── deploy/
+│   ├── hf_space.py        # deploy to a Hugging Face Docker Space (free MVP host)
+│   └── space-card.md      # the Space's README
 ├── .env.example
 ├── app/
 │   ├── main.py            # app factory, routers, lifespan (sweeps audio leftovers; loads model once)
@@ -34,6 +37,7 @@ Modules marked *not written* arrive with their step in `docs/ROADMAP.md` (Phase 
 - Validate size/duration **before** running the model. `services.audio.prepared_audio()` does both and is the only way audio enters the server: it gives each request a `req-*` dir under `AUDIO_TMP_DIR` and removes it in `finally`. It blocks (copy + ffmpeg), so call it from a worker thread.
 - **Auth:** every endpoint except `health` and `install` takes `token_id: TokenId`; anything that costs GPU time runs inside `daily_quota()`, which only counts successful requests. Never log a token.
 - Model loaded once at startup (lifespan); expose `model_version` in responses and `/v1/health`.
+- **Deploy:** `deploy/hf_space.py` uploads sources only and sets non-secret Space variables. Secrets (`GROQ_API_KEY`, `TOKEN_SECRET`) live in the Space settings, never in the repo or the script's output. One container, one process, so `MemoryUsageStore` is enough there; it resets when the Space restarts.
 - **Two ASR backends** behind `asr.Transcriber`: `local` (faster-whisper here) and `groq` (Whisper on Groq's API, the free MVP: no GPU, but the audio goes to Groq, see `docs/PRIVACY.md`). Provider trouble (429, 5xx, timeout) is `503 busy`, never `500`.
 - **Decode like the benchmark:** `services/asr.DECODE_OPTIONS` matches `sma3ni_ml.benchmark.FasterWhisperBackend`, so `ml/RESULTS.md` describes what users get. Change both together, and only on benchmark evidence.
 - Heavy work (ASR) off the event loop (`run_in_threadpool` or a worker), with a concurrency limit per GPU.
@@ -53,5 +57,10 @@ uv sync
 uv run pytest                        # fast: Whisper is faked
 uv run pytest -m slow                # real Whisper `tiny` on CPU (downloads it once)
 uv run uvicorn app.main:app --reload # first start downloads Whisper `small` (~480 MB)
-docker build -t sma3ni-server . && docker run --gpus all -p 8000:8000 --env-file .env sma3ni-server
+# Image (from the repo root): runs as uid 1000 on port 7860, like the Space
+docker build -f server/Dockerfile -t sma3ni-server .
+docker run --rm -p 7860:7860 --env-file server/.env sma3ni-server
+# Deploy the free MVP (needs `uv run hf auth login` with a write token once)
+uv run python deploy/hf_space.py <user>/<space> --dry-run
+uv run python deploy/hf_space.py <user>/<space>
 ```

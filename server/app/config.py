@@ -16,8 +16,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # `extra="ignore"`: .env.example lists variables for features not built yet.
     # `env_ignore_empty`: `NAME=` (as in .env.example) means "use the default",
-    # never an empty path or string.
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_ignore_empty=True)
+    # never an empty path or string. `hide_input_in_errors`: a startup error
+    # must not print the other settings, secrets included, into the logs.
+    model_config = SettingsConfigDict(
+        env_file=".env", extra="ignore", env_ignore_empty=True, hide_input_in_errors=True
+    )
 
     # `local`: faster-whisper in this process. `groq`: Whisper on Groq's API, so
     # no GPU is needed, but the audio leaves the server (docs/PRIVACY.md).

@@ -43,3 +43,13 @@ def test_groq_backend_needs_a_key(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(ValidationError, match="GROQ_API_KEY"):
         Settings(_env_file=None, asr_backend="groq")
+
+
+def test_startup_errors_never_print_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    secret = "do-not-print-me-do-not-print-me-0123"
+
+    with pytest.raises(ValidationError) as caught:
+        Settings(_env_file=None, asr_backend="groq", token_secret=secret)
+
+    assert secret not in str(caught.value)
