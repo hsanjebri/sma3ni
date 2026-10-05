@@ -11,14 +11,16 @@ from __future__ import annotations
 import wave
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 import httpx
-import numpy as np
 
 from app.config import Settings
 from app.errors import ApiError
 from app.schemas import ErrorCode
+
+if TYPE_CHECKING:
+    import numpy as np
 
 # The benchmark backend's defaults (ml/configs/benchmark.yaml): forced Arabic.
 DECODE_OPTIONS = {"language": "ar", "task": "transcribe", "beam_size": 5}
@@ -50,7 +52,15 @@ class WhisperTranscriber:
     """Loads the model once. `transcribe` blocks: call it from a worker thread."""
 
     def __init__(self, settings: Settings) -> None:
-        from faster_whisper import WhisperModel  # lazy: unit tests never load a model
+        try:
+            # Lazy: the `local` group is optional (the groq image skips it), and
+            # unit tests never load a model.
+            from faster_whisper import WhisperModel
+        except ImportError:
+            raise RuntimeError(
+                "ASR_BACKEND=local needs the `local` dependency group:"
+                " `uv sync --group local`, or build the image with ASR_LOCAL=1"
+            ) from None
 
         self._model = WhisperModel(
             settings.model_path, device=settings.device, compute_type=settings.compute_type
@@ -120,6 +130,8 @@ def samples(wav: Path) -> np.ndarray:
     path would be decoded a second time by PyAV, and PyAV 19 dropped an
     argument faster-whisper 1.2 still passes to it.
     """
+    import numpy as np  # the `local` group, like faster-whisper
+
     with wave.open(str(wav)) as source:
         frames = source.readframes(source.getnframes())
     return np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0

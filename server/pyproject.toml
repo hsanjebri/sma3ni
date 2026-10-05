@@ -7,9 +7,7 @@ authors = [{ name = "Hsan Jebri" }]
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.142.2",
-    "faster-whisper>=1.2.1",
     "httpx>=0.28.1",
-    "numpy>=2.4.6",
     "pydantic>=2.13.5",
     "pydantic-settings>=2.15.0",
     "python-multipart>=0.0.32",
@@ -20,6 +18,9 @@ dependencies = [
 [tool.uv]
 # An application, not a library: run from the checkout, never built or installed.
 package = false
+# `uv sync` installs both groups for development. The image skips them unless
+# built with ASR_LOCAL=1: with ASR_BACKEND=groq the server needs no local model.
+default-groups = ["dev", "local"]
 
 [tool.uv.sources]
 sma3ni-ml = { path = "../ml", editable = true }
@@ -40,8 +41,10 @@ markers = ["slow: loads a real Whisper model (downloads it on first run)"]
 
 [dependency-groups]
 dev = [
-    "huggingface-hub>=1.33.0",
     "pytest>=9.1.1",
-    "python-dotenv>=1.2.4",
     "ruff>=0.16.10",
+]
+local = [
+    "faster-whisper>=1.2.1",
+    "numpy>=2.4.6",
 ]

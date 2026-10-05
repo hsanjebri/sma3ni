@@ -37,7 +37,7 @@ Running them side by side does not add hours. It removes waiting: while clips co
 - [x] Audio: ffmpeg decode, size/duration limits, temp files deleted in `finally`
 - [x] `POST /v1/transcribe` with an off-the-shelf model (CPU `small` for dev); text through `sma3ni_ml.text`
 - [x] `POST /v1/install`, bearer token, daily rate limit
-- [ ] Dockerfile; deploy for free: Hugging Face Space + Groq Whisper (serverless GPU once we serve our own model)
+- [ ] Dockerfile; deploy for free: Render + Groq Whisper (serverless GPU once we serve our own model)
 - [ ] Summary / translation / replies via LLM
 - [ ] Load test: p95 latency for 30 s notes
 **Exit:** public HTTPS endpoint, < 3 s p50.

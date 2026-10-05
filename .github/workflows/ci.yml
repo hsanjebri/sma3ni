@@ -53,3 +53,20 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pytest -q
+
+  image:
+    name: server image (build + boot)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The slim image Render deploys. Render waits for this check before
+      # deploying, so a broken Dockerfile never replaces a working service.
+      - run: docker build -f server/Dockerfile -t sma3ni-server .
+
+      # Groq is only called on a transcription, so a placeholder key boots it.
+      - name: Boot and answer /v1/health
+        run: |
+          docker run -d --name api -p 8000:8000 -e ASR_BACKEND=groq -e GROQ_API_KEY=placeholder sma3ni-server
+          curl -fsS --retry 30 --retry-connrefused --retry-all-errors --retry-delay 1 http://127.0.0.1:8000/v1/health
+          docker logs api
