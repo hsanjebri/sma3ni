@@ -35,7 +35,7 @@ Running them side by side does not add hours. It removes waiting: while clips co
 - [x] `server/` skeleton: config, error envelope, `GET /v1/health`, CI
 - [x] Audio: ffmpeg decode, size/duration limits, temp files deleted in `finally`
 - [x] `POST /v1/transcribe` with an off-the-shelf model (CPU `small` for dev); text through `sma3ni_ml.text`
-- [ ] `POST /v1/install`, bearer token, daily rate limit
+- [x] `POST /v1/install`, bearer token, daily rate limit
 - [ ] Dockerfile; deploy to serverless GPU
 - [ ] Summary / translation / replies via LLM
 - [ ] Load test: p95 latency for 30 s notes
