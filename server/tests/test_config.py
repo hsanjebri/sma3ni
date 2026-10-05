@@ -36,3 +36,10 @@ def test_empty_values_fall_back_to_defaults(monkeypatch: pytest.MonkeyPatch) -> 
 def test_a_short_token_secret_is_refused() -> None:
     with pytest.raises(ValidationError, match="at least 32 characters"):
         Settings(_env_file=None, token_secret="too-short")
+
+
+def test_groq_backend_needs_a_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+
+    with pytest.raises(ValidationError, match="GROQ_API_KEY"):
+        Settings(_env_file=None, asr_backend="groq")

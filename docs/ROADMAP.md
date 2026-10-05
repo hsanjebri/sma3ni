@@ -18,6 +18,7 @@ Running them side by side does not add hours. It removes waiting: while clips co
 - [ ] Transcribe them by hand (two people per clip for 10% of clips to measure agreement)
 - [ ] Freeze the test set (`ml/data/test_v1` manifest, hash recorded in `ml/RESULTS.md`)
 - [ ] Benchmark: whisper-large-v3, whisper-large-v3-turbo, TuniSpeech fine-tune, a multi-dialect Arabic fine-tune, w2v-BERT 2.0 (if a Tunisian fine-tune exists)
+- [ ] Benchmark Groq's `whisper-large-v3-turbo` too: it is what the free MVP serves, and it decodes differently from a local run
 - [ ] Publish results table + blog/LinkedIn post
 **Exit:** reproducible benchmark with one command.
 

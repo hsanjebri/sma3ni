@@ -14,7 +14,9 @@ from fastapi import FastAPI
 from sma3ni_ml.text import arabizi
 
 from app.config import Settings
+from app.errors import ApiError
 from app.main import create_app
+from app.schemas import ErrorCode
 from app.services.asr import RawSegment, WhisperTranscriber
 
 pytestmark = pytest.mark.anyio
@@ -84,6 +86,25 @@ async def test_model_failure_answers_500_and_leaves_no_audio(
     assert response.status_code == 500
     assert response.json()["error"]["code"] == "internal_error"
     assert_nothing_left(settings)
+
+
+async def test_busy_backend_answers_503_and_keeps_the_quota(
+    client: httpx.AsyncClient,
+    clips: dict[str, Path],
+    settings: Settings,
+    transcriber: FakeTranscriber,
+) -> None:
+    settings.rate_limit_per_day = 1
+    transcriber.error = ApiError(ErrorCode.BUSY, "busy", headers={"Retry-After": "5"})
+
+    response = await client.post("/v1/transcribe", files=voice_note(clips))
+
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "busy"
+    assert response.headers["Retry-After"] == "5"
+    assert_nothing_left(settings)
+    transcriber.error = None
+    assert (await client.post("/v1/transcribe", files=voice_note(clips))).status_code == 200
 
 
 async def test_bad_audio_is_rejected_before_the_model(

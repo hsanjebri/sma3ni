@@ -16,7 +16,8 @@
 ┌──────────────────────────┐
 │ Inference API (FastAPI)  │
 │  1. validate + ffmpeg →  │  16 kHz mono WAV, in temp dir
-│  2. ASR model            │  faster-whisper (CTranslate2), fine-tuned
+│  2. ASR model            │  faster-whisper (CTranslate2), fine-tuned;
+│                          │  free MVP: Whisper on Groq (ASR_BACKEND=groq)
 │  3. normalize text       │  per TRANSCRIPTION_GUIDELINES.md
 │  4. optional LLM step    │  summary / translation / quick replies
 │  5. delete audio (finally)

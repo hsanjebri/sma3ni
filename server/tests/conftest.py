@@ -47,6 +47,9 @@ class FakeTranscriber:
             raise self.error
         return self.segments
 
+    def close(self) -> None:
+        pass
+
 
 @pytest.fixture
 def anyio_backend() -> str:

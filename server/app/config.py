@@ -7,8 +7,9 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
+from typing import Literal
 
-from pydantic import SecretStr, field_validator
+from pydantic import SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,8 +19,14 @@ class Settings(BaseSettings):
     # never an empty path or string.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_ignore_empty=True)
 
-    # Defaults run anywhere: Whisper `small` from Hugging Face, on CPU. Production
-    # points MODEL_PATH at the exported CTranslate2 dir, with DEVICE=cuda.
+    # `local`: faster-whisper in this process. `groq`: Whisper on Groq's API, so
+    # no GPU is needed, but the audio leaves the server (docs/PRIVACY.md).
+    asr_backend: Literal["local", "groq"] = "local"
+    groq_api_key: SecretStr | None = None
+    groq_model: str = "whisper-large-v3-turbo"
+
+    # Local backend. Defaults run anywhere: Whisper `small` from Hugging Face, on
+    # CPU. With our own model: the exported CTranslate2 dir, with DEVICE=cuda.
     model_path: str = "small"
     model_version: str = "dev"
     device: str = "cpu"
@@ -42,3 +49,9 @@ class Settings(BaseSettings):
         if value is not None and len(value.get_secret_value()) < 32:
             raise ValueError("TOKEN_SECRET must be at least 32 characters")
         return value
+
+    @model_validator(mode="after")
+    def _groq_needs_a_key(self) -> Settings:
+        if self.asr_backend == "groq" and self.groq_api_key is None:
+            raise ValueError("ASR_BACKEND=groq needs GROQ_API_KEY")
+        return self

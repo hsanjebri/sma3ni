@@ -17,6 +17,7 @@ class ErrorCode(StrEnum):
     RATE_LIMITED = "rate_limited"
     INTERNAL_ERROR = "internal_error"
     MODEL_LOADING = "model_loading"
+    BUSY = "busy"
 
 
 class ErrorBody(BaseModel):

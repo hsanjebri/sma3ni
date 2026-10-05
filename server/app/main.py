@@ -16,7 +16,7 @@ from app.errors import install_error_handling
 from app.routes import health, install, transcribe
 from app.security import MemoryUsageStore, TokenSigner
 from app.services import audio
-from app.services.asr import WhisperTranscriber
+from app.services.asr import build_transcriber
 
 logger = logging.getLogger(__name__)
 
@@ -42,16 +42,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     removed = audio.clear_leftovers(settings.audio_tmp_dir)
     if removed:
         logger.warning("removed %d leftover audio temp dirs", removed)
-    # Once per process. The first run downloads the model if MODEL_PATH is a name.
-    app.state.transcriber = await run_in_threadpool(WhisperTranscriber, settings)
-    logger.info(
-        "model %s loaded (%s, %s on %s)",
-        settings.model_version,
-        settings.model_path,
-        settings.compute_type,
-        settings.device,
-    )
+    # Once per process. The local backend downloads the model on first run if
+    # MODEL_PATH is a name.
+    app.state.transcriber = await run_in_threadpool(build_transcriber, settings)
+    if settings.asr_backend == "groq":
+        backend = f"groq {settings.groq_model}"
+    else:
+        backend = f"local {settings.model_path}, {settings.compute_type} on {settings.device}"
+    logger.info("asr ready: %s (model_version %s)", backend, settings.model_version)
     yield
+    app.state.transcriber.close()
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:

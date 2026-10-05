@@ -67,7 +67,7 @@ Deletes all donated data for this token. `204`.
 | 413 | `audio_too_large`, `audio_too_long` |
 | 429 | `rate_limited` |
 | 500 | `internal_error` |
-| 503 | `model_loading` (client retries with backoff) |
+| 503 | `model_loading`, `busy` (client retries with backoff; honour `Retry-After` when present) |
 
 `invalid_request`: a form field is missing or outside this contract. The message names the field, never the submitted value.
 

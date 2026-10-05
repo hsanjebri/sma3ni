@@ -24,6 +24,7 @@ STATUS = {
     ErrorCode.RATE_LIMITED: 429,
     ErrorCode.INTERNAL_ERROR: 500,
     ErrorCode.MODEL_LOADING: 503,
+    ErrorCode.BUSY: 503,
 }
 
 
