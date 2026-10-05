@@ -11,7 +11,7 @@ Base URL: `https://api.sma3ni.app` (placeholder). All endpoints under `/v1`. JSO
 Multipart form:
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `audio` | file | ✅ | opus, ogg, m4a, aac, mp3, wav; max 25 MB, max 5 min |
+| `audio` | file | ✅ | opus, ogg, m4a, aac, mp3, wav (detected from the content, not the file name); max 25 MB, max 5 min |
 | `script` | `arabic` \| `arabizi` | – | default `arabic` |
 | `summary` | bool | – | default `false`; ignored for audio < 20 s |
 | `translate` | `fr` \| `en` | – | omit for none |
@@ -21,13 +21,13 @@ Response `200`:
 ```json
 {
   "request_id": "req_8f2c...",
-  "text": "عسلامة، توا نوصل للـ réunion",
+  "text": "عسلامة، توا نوصل لل réunion",
   "script": "arabic",
   "language": "aeb",
   "duration_s": 12.4,
   "segments": [
     {"start": 0.0, "end": 2.1, "text": "عسلامة"},
-    {"start": 2.1, "end": 5.8, "text": "توا نوصل للـ réunion"}
+    {"start": 2.1, "end": 5.8, "text": "توا نوصل لل réunion"}
   ],
   "summary": null,
   "translation": null,
@@ -37,6 +37,8 @@ Response `200`:
 }
 ```
 - `language` uses ISO 639-3 `aeb` (Tunisian Arabic).
+- `text` and each segment follow `TRANSCRIPTION_GUIDELINES.md` (no diacritics, no tatweel, lowercase French), in the requested `script`.
+- `summary` and `translation` are strings, `replies` is a list of strings; each is `null` unless requested. Until the LLM features ship (ROADMAP Phase 3) they are always `null`.
 
 ## `POST /v1/feedback` (opt-in donation)
 Only sent if the user enabled "Help improve Sma3ni".
@@ -60,12 +62,14 @@ Deletes all donated data for this token. `204`.
 ```
 | HTTP | code |
 |---|---|
-| 400 | `invalid_audio`, `unsupported_format` |
+| 400 | `invalid_request`, `invalid_audio`, `unsupported_format` |
 | 401 | `unauthorized` |
 | 413 | `audio_too_large`, `audio_too_long` |
 | 429 | `rate_limited` |
 | 500 | `internal_error` |
 | 503 | `model_loading` (client retries with backoff) |
+
+`invalid_request`: a form field is missing or outside this contract. The message names the field, never the submitted value.
 
 ## Rules
 - The server **never stores** audio or text from `/transcribe`.

@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 
 class ErrorCode(StrEnum):
+    INVALID_REQUEST = "invalid_request"
     INVALID_AUDIO = "invalid_audio"
     UNSUPPORTED_FORMAT = "unsupported_format"
     UNAUTHORIZED = "unauthorized"
@@ -30,3 +31,33 @@ class ErrorResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     model_version: str
+
+
+class Script(StrEnum):
+    ARABIC = "arabic"
+    ARABIZI = "arabizi"
+
+
+class TranslateTarget(StrEnum):
+    FR = "fr"
+    EN = "en"
+
+
+class Segment(BaseModel):
+    start: float
+    end: float
+    text: str
+
+
+class TranscribeResponse(BaseModel):
+    request_id: str
+    text: str
+    script: Script
+    language: str
+    duration_s: float
+    segments: list[Segment]
+    summary: str | None = None
+    translation: str | None = None
+    replies: list[str] | None = None
+    model_version: str
+    processing_ms: int

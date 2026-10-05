@@ -2,53 +2,23 @@ from __future__ import annotations
 
 import io
 import os
-import shutil
-import subprocess
 import time
 import wave
 from pathlib import Path
 
 import pytest
+from conftest import assert_nothing_left
 
 from app.config import Settings
 from app.errors import ApiError
 from app.schemas import ErrorCode
 from app.services.audio import SAMPLE_RATE, clear_leftovers, prepared_audio
 
-TONE = ["-f", "lavfi", "-i", "sine=frequency=440:duration=2"]
-# Synthetic clips only: the repo never holds real voices (AGENTS.md).
-CLIPS = {
-    "voice_note.opus": [*TONE, "-c:a", "libopus", "-f", "ogg"],  # what WhatsApp shares
-    "note.m4a": [*TONE, "-c:a", "aac"],
-    "note.aac": [*TONE, "-c:a", "aac", "-f", "adts"],
-    "note.mp3": [*TONE, "-c:a", "libmp3lame"],
-    "note.wav": TONE,
-    "note.flac": [*TONE, "-c:a", "flac"],  # real audio, but not a format API.md accepts
-    "silent.mp4": ["-f", "lavfi", "-i", "color=c=black:s=16x16:d=1", "-c:v", "mpeg4"],
-}
 ACCEPTED = ["voice_note.opus", "note.m4a", "note.aac", "note.mp3", "note.wav"]
-
-
-@pytest.fixture(scope="session")
-def clips(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
-    if shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None:
-        pytest.fail("ffmpeg/ffprobe not on PATH: see 'System dependencies' in server/AGENTS.md")
-    out = tmp_path_factory.mktemp("clips")
-    for name, args in CLIPS.items():
-        subprocess.run(
-            ["ffmpeg", "-nostdin", "-v", "error", *args, str(out / name)],
-            check=True,
-            capture_output=True,
-        )
-    return {name: out / name for name in CLIPS}
 
 
 def upload(path: Path) -> io.BytesIO:
     return io.BytesIO(path.read_bytes())
-
-
-def assert_nothing_left(settings: Settings) -> None:
-    assert list(settings.audio_tmp_dir.iterdir()) == []
 
 
 def error_code(settings: Settings, data: io.BytesIO) -> ErrorCode:

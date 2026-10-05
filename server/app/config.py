@@ -17,7 +17,14 @@ class Settings(BaseSettings):
     # never an empty path or string.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_ignore_empty=True)
 
+    # Defaults run anywhere: Whisper `small` from Hugging Face, on CPU. Production
+    # points MODEL_PATH at the exported CTranslate2 dir, with DEVICE=cuda.
+    model_path: str = "small"
     model_version: str = "dev"
+    device: str = "cpu"
+    compute_type: str = "int8"
+    # Transcriptions running at once; more queue. 1 per GPU is the safe start.
+    asr_concurrency: int = 1
 
     max_audio_seconds: int = 300
     max_upload_mb: int = 25

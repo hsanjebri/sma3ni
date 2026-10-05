@@ -7,14 +7,21 @@ authors = [{ name = "Hsan Jebri" }]
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.142.2",
+    "faster-whisper>=1.2.1",
+    "numpy>=2.4.6",
     "pydantic>=2.13.5",
     "pydantic-settings>=2.15.0",
+    "python-multipart>=0.0.32",
+    "sma3ni-ml",
     "uvicorn[standard]>=0.54.0",
 ]
 
 [tool.uv]
 # An application, not a library: run from the checkout, never built or installed.
 package = false
+
+[tool.uv.sources]
+sma3ni-ml = { path = "../ml", editable = true }
 
 [tool.ruff]
 line-length = 100
@@ -26,6 +33,9 @@ select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+# Slow tests load a real model; CI and the default run skip them: `pytest -m slow`.
+addopts = ["-m", "not slow"]
+markers = ["slow: loads a real Whisper model (downloads it on first run)"]
 
 [dependency-groups]
 dev = [

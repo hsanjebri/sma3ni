@@ -43,7 +43,7 @@ sma3ni/
 | Part | Command |
 |---|---|
 | ML benchmark | `cd ml && uv sync && uv run python -m sma3ni_ml.benchmark --config configs/benchmark.yaml` |
-| Server | `cd server && uv sync && uv run uvicorn app.main:app --reload` |
+| Server | `cd server && uv sync && uv run uvicorn app.main:app --reload` (needs ffmpeg; the first start downloads Whisper `small`, ~480 MB) |
 | Mobile | `cd mobile && npm install && npx expo start` |
 
 See each folder's `AGENTS.md` / `README.md` for details.

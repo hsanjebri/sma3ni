@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -14,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 # HTTP status per error code, from the table in docs/API.md.
 STATUS = {
+    ErrorCode.INVALID_REQUEST: 400,
     ErrorCode.INVALID_AUDIO: 400,
     ErrorCode.UNSUPPORTED_FORMAT: 400,
     ErrorCode.UNAUTHORIZED: 401,
@@ -42,6 +44,15 @@ def error_response(code: ErrorCode, message: str) -> JSONResponse:
 async def _handle_api_error(_: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, ApiError)
     return error_response(exc.code, exc.message)
+
+
+async def _handle_validation_error(_: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, RequestValidationError)
+    # Field names only: FastAPI's default 422 body echoes the submitted values.
+    fields = sorted({str(error["loc"][-1]) for error in exc.errors() if error.get("loc")})
+    return error_response(
+        ErrorCode.INVALID_REQUEST, f"Missing or invalid field: {', '.join(fields)}."
+    )
 
 
 class CatchAllMiddleware:
@@ -81,4 +92,5 @@ class CatchAllMiddleware:
 
 def install_error_handling(app: FastAPI) -> None:
     app.add_exception_handler(ApiError, _handle_api_error)
+    app.add_exception_handler(RequestValidationError, _handle_validation_error)
     app.add_middleware(CatchAllMiddleware)
