@@ -15,6 +15,9 @@ dependencies = [
 [project.optional-dependencies]
 asr = [
     "faster-whisper>=1.0",
+    # PyAV 19 dropped `av.open(metadata_errors=...)`, which faster-whisper 1.2.1
+    # passes when given a path: every file fails. Lift once faster-whisper adapts.
+    "av<19",
     "transformers>=4.44",
     "torch>=2.3",
     "soundfile>=0.12",
