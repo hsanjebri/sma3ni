@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from sma3ni_ml import text
@@ -148,6 +150,13 @@ class TestResources:
     def test_lexicon_and_loanwords_load(self) -> None:
         assert text.arabizi_lexicon()["برشا"] == "barcha"
         assert text.loanwords()["karhba"] == "كرهبة"
+
+    def test_tables_live_inside_the_package(self) -> None:
+        # The server installs sma3ni-ml as a wheel, which only carries what is
+        # under src/sma3ni_ml/. A table outside it would load here and break there.
+        package_dir = Path(text.__file__).resolve().parent
+        for name in ("arabizi_map.tsv", "arabizi_lexicon.tsv", "loanwords.tsv"):
+            assert (package_dir / "resources" / name).is_file(), name
 
 
 class TestLint:
