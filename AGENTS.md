@@ -25,7 +25,7 @@ If code and docs disagree, **stop and flag it**. Don't silently pick one. If you
 3. **Don't touch `data/`** contents or commit datasets/audio. `data/` is gitignored. Datasets are referenced by path or Hugging Face ID.
 4. **Respect the API contract** in `docs/API.md`. Breaking changes need a new version prefix (`/v2`).
 5. **Transcription convention** in `docs/TRANSCRIPTION_GUIDELINES.md` applies to every text normalization function, dataset preparation script and evaluation metric.
-6. **Small, reviewable changes.** One concern per PR. Include tests.
+6. **Small, reviewable steps.** One concern per commit, each with its tests. Each phase or big feature lives on its own branch (`phase/3-api`...), see `CONTRIBUTING.md`.
 7. **No WhatsApp scraping or private APIs.** Audio enters the app only through the OS share sheet / file picker.
 
 ## Tooling conventions
