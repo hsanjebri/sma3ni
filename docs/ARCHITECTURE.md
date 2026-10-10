@@ -15,8 +15,10 @@
             ▼
 ┌──────────────────────────┐
 │ Inference API (FastAPI)  │
-│  1. validate + ffmpeg →  │  16 kHz mono WAV, in temp dir
-│  2. ASR model            │  faster-whisper (CTranslate2), fine-tuned
+│  1. validate + ffmpeg →  │  16 kHz mono WAV (local model) or a metadata-free
+│                          │  remux (Groq), in temp dir
+│  2. ASR model            │  faster-whisper (CTranslate2), fine-tuned;
+│                          │  free MVP: Whisper on Groq (ASR_BACKEND=groq)
 │  3. normalize text       │  per TRANSCRIPTION_GUIDELINES.md
 │  4. optional LLM step    │  summary / translation / quick replies
 │  5. delete audio (finally)
@@ -40,8 +42,8 @@
 - **faster-whisper** with the exported model; model loaded once at startup
 - **ffmpeg** for decoding WhatsApp Opus/OGG
 - **LLM** (provider via env var) for summary / translation / replies, called only when requested
-- **Deployment:** container on a serverless GPU (Modal or RunPod) with scale-to-zero; CPU fallback with `small` model for dev
-- **Auth:** per-install anonymous token (issued on first launch) + rate limit per token
+- **Deployment:** one container (`server/Dockerfile`). Free MVP: Render's free web service (`render.yaml`: 512 MB, 0.1 CPU, sleeps after 15 min idle) with `ASR_BACKEND=groq` and the slim image (no local model). With our own model: the same container on a serverless GPU (Modal or RunPod) with scale-to-zero. Dev: CPU with the `small` model
+- **Auth:** per-install anonymous token (issued on first launch, HMAC-signed so the server stores no list of installs) + daily rate limit per token
 - **Observability:** structured logs with metadata only (request id, duration, latency, model version); Sentry for errors (with content scrubbing)
 
 ### `mobile/` — app
@@ -62,7 +64,7 @@
 | ASR base model | Whisper large-v3-turbo (server), whisper-small (on-device) | Best fine-tuned dialect results; turbo is fast |
 | Fine-tuning | LoRA first, full fine-tune if budget allows | Cheap, one GPU |
 | Serving runtime | faster-whisper / CTranslate2 | ~4× faster than HF pipeline, int8 |
-| Hosting | Serverless GPU | Pay per use, scale to zero |
+| Hosting | Free MVP: Render free tier + Groq Whisper; then serverless GPU | $0 until our own model needs a GPU; then pay per use, scale to zero |
 | Mobile | Expo + native share extensions | One UI codebase, native where required |
 | No backend DB for content | — | Privacy + simplicity |
 
@@ -77,3 +79,15 @@
 | **Total** | **< 3 s** |
 
 Cold starts on serverless GPU can add 5–15 s: keep one warm instance during peak hours (evenings, Tunis time).
+
+### Measured: free MVP (Render free + Groq), 2026-10-10
+`server/scripts/load_test.py`, from Tunis, 30 s Opus note (85 KB), 20 requests per run.
+
+| Run | Round trip p50 / p95 | Server p50 | Notes |
+|---|---|---|---|
+| 1 at a time, decoded to WAV | 2.93 s / 3.05 s | 2.42 s | ffmpeg decode on 0.1 CPU dominated |
+| 1 at a time, metadata-free remux | **2.00 s / 2.38 s** | 1.62 s | current; meets < 3 s |
+| 4 at a time, remux | 6.49 s / 7.02 s | 5.70 s | 13 of 20 got `503 busy`: Groq free-tier rate limit |
+| Cold start (after 15 min idle) | 23 s for the first request | | Render free tier sleeps; the app should call `/v1/health` on open |
+
+The free MVP fits one user at a time comfortably. Before a public launch: Groq's paid tier (rate limit) and a host with more than 0.1 CPU (parallel requests).

@@ -1,0 +1,13 @@
+# The image copies only ml/ and server/ sources; keep the build context small.
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.env
+.git
+.idea
+.vscode
+data
+models
+ml/reports
+mobile

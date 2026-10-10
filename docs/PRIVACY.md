@@ -13,8 +13,14 @@ Voice notes are private conversations, often including people who never agreed t
 |---|---|---|
 | Audio | In transit (TLS) → server temp file | Deleted in `finally` right after processing |
 | Transcript / summary | Returned to phone | Phone only, until user deletes |
-| Install token | Server (rate limiting) | Until app is uninstalled / token rotated |
+| Install token | Phone only. The server signs it and checks the signature; it keeps no list of installs | Until app is uninstalled / signing key rotated |
+| Daily usage count | Server (rate limiting) | Per token, for the current UTC day only |
 | Request metadata | Server logs | 30 days: request id, duration, latency, model version, error code. **No text, no audio.** |
+
+## Speech-to-text provider (free MVP)
+- With `ASR_BACKEND=groq` the audio is sent to Groq's Whisper API to be transcribed; we still store nothing. ffmpeg first remuxes it with all metadata removed (titles, device or location tags), so only the sound leaves the server.
+- Groq keeps no inference data by default but may log it for up to 30 days to investigate errors or abuse, unless **Zero Data Retention** is enabled in the Groq console (Data Controls). Enable it on the account the server uses.
+- The privacy policy must name Groq as a processor while this backend is in use. Our own model (`ASR_BACKEND=local`) removes it.
 
 ## LLM features
 - Summary / translation / replies send the **transcript text** (not audio) to the LLM provider.
@@ -29,9 +35,9 @@ Voice notes are private conversations, often including people who never agreed t
 - `DELETE /v1/donations` removes everything linked to the token.
 
 ## Engineering rules
-- Never log request bodies, transcript text, or audio.
+- Never log request bodies, transcript text, audio, or tokens.
 - Sentry / error reporting: scrub request bodies; no breadcrumbs with text.
-- Temp files in a dedicated directory; startup job clears leftovers.
+- Temp files in a dedicated directory (`AUDIO_TMP_DIR`, one `req-*` dir per request, removed in `finally`); a startup sweep clears leftovers older than 10 minutes. In production, point it at a RAM-backed tmpfs so audio never touches disk, and set `TMPDIR` to the same place: Starlette buffers uploads over 1 MB in an anonymous temp file there (unlinked on Linux, closed when the request ends) before the server copies it.
 - TLS only; HSTS.
 - Secrets in environment variables / secret manager.
 
