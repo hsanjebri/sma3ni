@@ -79,3 +79,15 @@
 | **Total** | **< 3 s** |
 
 Cold starts on serverless GPU can add 5–15 s: keep one warm instance during peak hours (evenings, Tunis time).
+
+### Measured: free MVP (Render free + Groq), 2026-10-10
+`server/scripts/load_test.py`, from Tunis, 30 s Opus note (85 KB), 20 requests per run.
+
+| Run | Round trip p50 / p95 | Server p50 | Notes |
+|---|---|---|---|
+| 1 at a time, decoded to WAV | 2.93 s / 3.05 s | 2.42 s | ffmpeg decode on 0.1 CPU dominated |
+| 1 at a time, metadata-free remux | **2.00 s / 2.38 s** | 1.62 s | current; meets < 3 s |
+| 4 at a time, remux | 6.49 s / 7.02 s | 5.70 s | 13 of 20 got `503 busy`: Groq free-tier rate limit |
+| Cold start (after 15 min idle) | 23 s for the first request | | Render free tier sleeps; the app should call `/v1/health` on open |
+
+The free MVP fits one user at a time comfortably. Before a public launch: Groq's paid tier (rate limit) and a host with more than 0.1 CPU (parallel requests).

@@ -32,17 +32,17 @@ Running them side by side does not add hours. It removes waiting: while clips co
 - [ ] Export to CTranslate2 and point the server's `MODEL_PATH` at it
 **Exit:** WER clearly better than best baseline on frozen test set.
 
-## Phase 3 — API (track B, weeks 1–4) 🚧 current
+## Phase 3 — API (track B, weeks 1–4) ✅ done 2026-10-10
 - [x] `server/` skeleton: config, error envelope, `GET /v1/health`, CI
 - [x] Audio: ffmpeg decode, size/duration limits, temp files deleted in `finally`
 - [x] `POST /v1/transcribe` with an off-the-shelf model (CPU `small` for dev); text through `sma3ni_ml.text`
 - [x] `POST /v1/install`, bearer token, daily rate limit
 - [x] Dockerfile; deploy for free: Render + Groq Whisper (serverless GPU once we serve our own model)
-- [ ] Summary / translation / replies via LLM
-- [ ] Load test: p95 latency for 30 s notes
-**Exit:** public HTTPS endpoint, < 3 s p50.
+- [x] Load test (`server/scripts/load_test.py`): 30 s note, live, 2.00 s p50 / 2.38 s p95 round trip
+- Moved to Phase 5: summary / translation / replies via LLM (the MVP needs the transcript only)
+**Exit:** public HTTPS endpoint, < 3 s p50. ✅ Met: see the measured table in `ARCHITECTURE.md`.
 
-## Phase 4 — Mobile MVP (track B, weeks 2–6)
+## Phase 4 — Mobile MVP (track B, weeks 2–6) 🚧 next
 - [ ] Expo app skeleton: TypeScript strict, Expo Router, i18n (ar/fr/en, RTL), CI
 - [ ] "Pick audio file" → transcript screen with copy (works without any native code)
 - [ ] Android share intent → APK for friends
@@ -52,6 +52,8 @@ Running them side by side does not add hours. It removes waiting: while clips co
 **Exit:** 20+ beta testers using it daily.
 
 ## Phase 5 — Flywheel & launch (weeks 10–12)
+- [ ] Summary / translation / quick replies via LLM (moved from Phase 3; providers that don't train on API data, e.g. two Groq models, one drafting and one checking)
+- [ ] Before a public launch: Groq paid tier (the free tier rate-limits a few parallel users) and a decision on token minting (`TODO(question)` in `server/app/routes/install.py`)
 - [ ] "Correct transcript" + opt-in donation
 - [ ] Onboarding, privacy policy, store assets (`STORE_RELEASE.md`)
 - [ ] Google Play closed test (12 testers / 14 days) → production

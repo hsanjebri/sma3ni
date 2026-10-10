@@ -23,10 +23,11 @@ server/
 │   │   ├── text.py        # calls sma3ni_ml.text (path dependency on ../ml), never a copy
 │   │   └── llm.py         # summary / translate / replies         (not written)
 │   └── security.py        # signed install tokens, daily quota per token
+├── scripts/load_test.py   # latency against a running API (Phase 3 exit check)
 └── tests/                 # pytest + httpx AsyncClient; small fixture audio only
 ```
 
-Modules marked *not written* arrive with their step in `docs/ROADMAP.md` (Phase 3); don't stub them early.
+Modules marked *not written* arrive with their step in `docs/ROADMAP.md`; don't stub them early.
 
 ## Rules
 - **Privacy:** audio in a temp dir, deleted in `finally`; never log text or audio; scrub Sentry events. Add a test that asserts no temp files remain after a request (success and failure).
@@ -61,4 +62,6 @@ docker build -f server/Dockerfile -t sma3ni-server .
 docker run --rm -p 8000:8000 --env-file server/.env sma3ni-server
 # Free-tier check: Render gives 512 MB and 0.1 CPU
 docker run --rm --memory 512m --cpus 0.1 -p 8000:8000 --env-file server/.env sma3ni-server
+# Latency of a running API, with a voice note you may send (never committed)
+uv run python scripts/load_test.py https://sma3ni-api.onrender.com note.opus --requests 20
 ```

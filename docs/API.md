@@ -38,7 +38,7 @@ Response `200`:
 ```
 - `language` uses ISO 639-3 `aeb` (Tunisian Arabic).
 - `text` and each segment follow `TRANSCRIPTION_GUIDELINES.md` (no diacritics, no tatweel, lowercase French), in the requested `script`.
-- `summary` and `translation` are strings, `replies` is a list of strings; each is `null` unless requested. Until the LLM features ship (ROADMAP Phase 3) they are always `null`.
+- `summary` and `translation` are strings, `replies` is a list of strings; each is `null` unless requested. Until the LLM features ship (ROADMAP Phase 5) they are always `null`.
 
 ## `POST /v1/feedback` (opt-in donation)
 Only sent if the user enabled "Help improve Sma3ni".

@@ -30,7 +30,7 @@ async def transcribe(
     audio: UploadFile,
     script: Annotated[Script, Form()] = Script.ARABIC,
     # Accepted now so the contract is stable; answered by the LLM step (ROADMAP
-    # Phase 3). Until then `summary`, `translation` and `replies` stay null.
+    # Phase 5). Until then `summary`, `translation` and `replies` stay null.
     summary: Annotated[bool, Form()] = False,
     translate: Annotated[TranslateTarget | None, Form()] = None,
     replies: Annotated[bool, Form()] = False,

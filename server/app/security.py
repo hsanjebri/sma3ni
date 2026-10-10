@@ -60,7 +60,7 @@ class MemoryUsageStore:
     """Counts in process memory: each worker counts alone, and a restart resets.
 
     Enough for dev and a single instance. A deployment that scales out or to
-    zero needs a shared store with the same interface (ROADMAP Phase 3, deploy).
+    zero needs a shared store with the same interface (before scaling beyond one instance).
     """
 
     def __init__(self) -> None:
