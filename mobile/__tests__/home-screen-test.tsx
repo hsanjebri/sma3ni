@@ -5,10 +5,18 @@ import { router } from 'expo-router';
 import { ApiError, api } from '@/api';
 import HomeScreen from '@/app/index';
 import { t } from '@/i18n';
+import { useOnboarded } from '@/lib/onboarding';
 import { deleteCachedAudio, pickAudio } from '@/lib/pick';
 import { getTranscript } from '@/lib/transcripts';
 
-jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
+jest.mock('expo-router', () => ({
+  router: { push: jest.fn() },
+  Redirect: ({ href }: { href: string }) => {
+    const { Text } = jest.requireActual('react-native');
+    return <Text>{`redirect:${href}`}</Text>;
+  },
+}));
+jest.mock('@/lib/onboarding', () => ({ useOnboarded: jest.fn(() => true) }));
 jest.mock('@/lib/pick', () => ({ pickAudio: jest.fn(), deleteCachedAudio: jest.fn() }));
 jest.mock('@/api', () => {
   const actual = jest.requireActual('@/api/client');
@@ -79,4 +87,11 @@ test('cancelling the picker sends nothing', async () => {
 
   await screen.findByText(t('pickAudio'));
   expect(api.transcribe).not.toHaveBeenCalled();
+});
+
+test('a first launch goes to onboarding first', async () => {
+  jest.mocked(useOnboarded).mockReturnValueOnce(false);
+  await renderHome();
+
+  expect(screen.getByText('redirect:/onboarding')).toBeTruthy();
 });

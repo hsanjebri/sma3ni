@@ -45,7 +45,8 @@ Running them side by side does not add hours. It removes waiting: while clips co
 ## Phase 4 — Mobile MVP (track B, weeks 2–6) 🚧 next
 - [ ] Expo app skeleton: TypeScript strict, Expo Router, i18n (ar/fr/en, RTL), CI
 - [x] "Pick audio file" → transcript screen with copy (works without any native code)
-- [ ] Android share intent → APK for friends
+- [x] UI: animated onboarding, redesigned Home and transcript screens, haptics, reduce-motion support
+- [ ] Android share intent → APK for friends: a sheet over WhatsApp, not a jump into the app (`MOBILE.md`)
 - [ ] History, settings
 - [ ] Arabizi output toggle
 - [ ] iOS Share Extension → TestFlight (needs Apple Developer account; after the Android beta works)

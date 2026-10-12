@@ -21,5 +21,20 @@
   "errorTooLarge": "This file is too big: 25 MB maximum.",
   "errorFormat": "This file isn't a voice note we can read.",
   "errorRateLimited": "You've reached today's limit. Try again tomorrow.",
-  "errorGeneric": "Something went wrong. Try again."
+  "errorGeneric": "Something went wrong. Try again.",
+  "onboarding1Title": "Can't listen right now?",
+  "onboarding1Body": "Sma3ni turns Tunisian voice notes into text in seconds: Darija, French, all of it.",
+  "onboarding2Title": "Straight from WhatsApp",
+  "onboarding2Body": "Long-press a voice note, tap Share, then pick Sma3ni. That is all.",
+  "onboarding3Title": "Private by design",
+  "onboarding3Body": "No account. The audio is deleted right after. Your transcripts stay on your phone.",
+  "skip": "Skip",
+  "next": "Next",
+  "start": "Let's go",
+  "shareAction": "Share",
+  "pickTitle": "Transcribe a voice note",
+  "pickBody": "Choose a voice note saved on your phone.",
+  "usuallyFast": "Usually takes about 2 seconds.",
+  "wakingUp": "Waking up the server, this first one can take ~20 seconds…",
+  "openWhatsApp": "Open WhatsApp"
 }

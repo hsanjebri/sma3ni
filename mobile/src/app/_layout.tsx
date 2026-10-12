@@ -23,12 +23,14 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <Stack
         screenOptions={{
-          title: t('appName'),
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
+          headerShadowVisible: false,
           contentStyle: { backgroundColor: colors.background },
         }}
       >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="transcript/[id]" options={{ title: t('transcriptTitle') }} />
       </Stack>
       <StatusBar style="auto" />

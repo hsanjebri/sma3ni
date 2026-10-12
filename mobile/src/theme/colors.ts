@@ -1,11 +1,26 @@
 import { useColorScheme } from 'react-native';
 
-const light = { background: '#FFFFFF', text: '#11181C', muted: '#5F6B73', accent: '#C8102E' };
+// Tunisian red as the accent; everything else stays quiet so the transcript leads.
+const light = {
+  background: '#F6F4F2',
+  surface: '#FFFFFF',
+  text: '#16181A',
+  muted: '#646B72',
+  border: '#E6E1DC',
+  accent: '#E70013',
+  accentSoft: '#FDE7E9',
+  onAccent: '#FFFFFF',
+};
+
 const dark: typeof light = {
-  background: '#101415',
+  background: '#0E1112',
+  surface: '#181C1E',
   text: '#ECEDEE',
   muted: '#9BA1A6',
-  accent: '#FF5A6E',
+  border: '#2A3033',
+  accent: '#FF4D5E',
+  accentSoft: '#3A1A1E',
+  onAccent: '#FFFFFF',
 };
 
 export type Colors = typeof light;

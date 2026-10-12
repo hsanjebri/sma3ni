@@ -21,5 +21,20 @@
   "errorTooLarge": "Ce fichier est trop gros : 25 Mo maximum.",
   "errorFormat": "Ce fichier n'est pas un message vocal lisible.",
   "errorRateLimited": "Tu as atteint la limite d'aujourd'hui. Réessaie demain.",
-  "errorGeneric": "Quelque chose n'a pas marché. Réessaie."
+  "errorGeneric": "Quelque chose n'a pas marché. Réessaie.",
+  "onboarding1Title": "Tu ne peux pas écouter ?",
+  "onboarding1Body": "Sma3ni transforme les vocaux tunisiens en texte en quelques secondes : darija, français, tout.",
+  "onboarding2Title": "Directement depuis WhatsApp",
+  "onboarding2Body": "Appuie longuement sur un vocal, touche Partager, puis choisis Sma3ni. C’est tout.",
+  "onboarding3Title": "Privé par conception",
+  "onboarding3Body": "Pas de compte. L’audio est supprimé juste après. Tes transcriptions restent sur ton téléphone.",
+  "skip": "Passer",
+  "next": "Suivant",
+  "start": "C’est parti",
+  "shareAction": "Partager",
+  "pickTitle": "Transcrire un vocal",
+  "pickBody": "Choisis un message vocal enregistré sur ton téléphone.",
+  "usuallyFast": "En général, environ 2 secondes.",
+  "wakingUp": "Réveil du serveur, le premier peut prendre ~20 secondes…",
+  "openWhatsApp": "Ouvrir WhatsApp"
 }
