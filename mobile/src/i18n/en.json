@@ -5,5 +5,21 @@
   "howToStep1": "In WhatsApp, long-press a voice note.",
   "howToStep2": "Tap Share, then choose Sma3ni.",
   "howToStep3": "Read it in Arabic script or Arabizi.",
-  "privacy": "Your audio is deleted right after transcription. Transcripts stay on your phone."
+  "privacy": "Your audio is deleted right after transcription. Transcripts stay on your phone.",
+  "pickAudio": "Pick a voice note",
+  "transcribing": "Transcribing…",
+  "transcriptTitle": "Transcript",
+  "transcriptMissing": "This transcript is no longer available. Pick the voice note again.",
+  "transcriptEmpty": "(No speech found in this note.)",
+  "durationSeconds": "{seconds} s voice note",
+  "copy": "Copy",
+  "copied": "Copied ✓",
+  "share": "Share",
+  "errorOffline": "No internet connection. Check it and try again.",
+  "errorBusy": "The server is busy right now. Try again in a minute.",
+  "errorTooLong": "This note is too long: 5 minutes maximum.",
+  "errorTooLarge": "This file is too big: 25 MB maximum.",
+  "errorFormat": "This file isn't a voice note we can read.",
+  "errorRateLimited": "You've reached today's limit. Try again tomorrow.",
+  "errorGeneric": "Something went wrong. Try again."
 }

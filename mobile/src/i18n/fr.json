@@ -5,5 +5,21 @@
   "howToStep1": "Dans WhatsApp, appuie longuement sur un message vocal.",
   "howToStep2": "Touche Partager, puis choisis Sma3ni.",
   "howToStep3": "Lis-le en écriture arabe ou en arabizi.",
-  "privacy": "Ton audio est supprimé juste après la transcription. Les transcriptions restent sur ton téléphone."
+  "privacy": "Ton audio est supprimé juste après la transcription. Les transcriptions restent sur ton téléphone.",
+  "pickAudio": "Choisir un message vocal",
+  "transcribing": "Transcription…",
+  "transcriptTitle": "Transcription",
+  "transcriptMissing": "Cette transcription n'est plus disponible. Choisis à nouveau le message vocal.",
+  "transcriptEmpty": "(Aucune parole dans ce message.)",
+  "durationSeconds": "Message vocal de {seconds} s",
+  "copy": "Copier",
+  "copied": "Copié ✓",
+  "share": "Partager",
+  "errorOffline": "Pas de connexion internet. Vérifie-la et réessaie.",
+  "errorBusy": "Le serveur est occupé. Réessaie dans une minute.",
+  "errorTooLong": "Ce message est trop long : 5 minutes maximum.",
+  "errorTooLarge": "Ce fichier est trop gros : 25 Mo maximum.",
+  "errorFormat": "Ce fichier n'est pas un message vocal lisible.",
+  "errorRateLimited": "Tu as atteint la limite d'aujourd'hui. Réessaie demain.",
+  "errorGeneric": "Quelque chose n'a pas marché. Réessaie."
 }

@@ -44,7 +44,7 @@ Running them side by side does not add hours. It removes waiting: while clips co
 
 ## Phase 4 — Mobile MVP (track B, weeks 2–6) 🚧 next
 - [ ] Expo app skeleton: TypeScript strict, Expo Router, i18n (ar/fr/en, RTL), CI
-- [ ] "Pick audio file" → transcript screen with copy (works without any native code)
+- [x] "Pick audio file" → transcript screen with copy (works without any native code)
 - [ ] Android share intent → APK for friends
 - [ ] History, settings
 - [ ] Arabizi output toggle

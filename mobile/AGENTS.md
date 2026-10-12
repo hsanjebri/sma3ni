@@ -12,13 +12,14 @@ mobile/
 ├── src/
 │   ├── app/               # Expo Router: every file is a screen, _layout.tsx a navigator
 │   │   ├── _layout.tsx
-│   │   └── index.tsx      # Home
+│   │   ├── index.tsx      # Home: pick a voice note, transcribe, open the transcript
+│   │   └── transcript/[id].tsx  # text, copy, share
 │   ├── i18n/              # en.json (defines the keys), fr.json, ar.json, t()
 │   ├── theme/             # light/dark colors
-│   ├── api/               # typed client matching docs/API.md          (not written)
+│   ├── api/               # typed client for docs/API.md: token, 401 re-install, busy retries
 │   ├── db/                # expo-sqlite schema + queries                (not written)
 │   ├── components/                                                     (not written)
-│   └── lib/               # file utils                                  (not written)
+│   └── lib/               # pick + delete cached audio, error messages, transcripts (memory)
 ├── __tests__/             # jest-expo + React Native Testing Library (`*-test.ts(x)`)
 ├── plugins/               # config plugins for share extension / intent (not written)
 ├── ios-share-extension/   # Swift sources                               (not written)
@@ -36,6 +37,8 @@ lint tools land in `devDependencies`.
 
 ## Rules
 - TypeScript strict; no `any` without a comment.
+- API base URL: `EXPO_PUBLIC_API_URL`, else the live Render server. The client (`src/api`) owns every retry docs/API.md allows; react-query must not add its own.
+- Tests (React Native Testing Library 14): `render` and `fireEvent.*` return Promises: always `await` them, or state updates escape `act()` and tests flake.
 - All user-facing strings through `t()` from `@/i18n` (ar/fr/en); a key missing from a language is a type error. Arabic is RTL (`supportsRTL` in `app.config.ts`): use `start`/`end`, never `left`/`right`, in layouts.
 - API types must match `docs/API.md`; ignore unknown fields.
 - Transcripts stored **only** in local SQLite. No analytics events containing text.
