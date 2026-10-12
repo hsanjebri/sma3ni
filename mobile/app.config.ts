@@ -6,6 +6,8 @@ const config: ExpoConfig = {
   slug: 'sma3ni',
   version: '0.1.0',
   scheme: 'sma3ni',
+  // A phone app: no web build (SecureStore, the share sheet and file cache don't exist there).
+  platforms: ['android', 'ios'],
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
@@ -21,9 +23,6 @@ const config: ExpoConfig = {
       backgroundImage: './assets/android-icon-background.png',
       monochromeImage: './assets/android-icon-monochrome.png',
     },
-  },
-  web: {
-    favicon: './assets/favicon.png',
   },
   plugins: [
     'expo-router',
