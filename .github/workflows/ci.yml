@@ -70,3 +70,25 @@ jobs:
           docker run -d --name api -p 8000:8000 -e ASR_BACKEND=groq -e GROQ_API_KEY=placeholder sma3ni-server
           curl -fsS --retry 30 --retry-connrefused --retry-all-errors --retry-delay 1 http://127.0.0.1:8000/v1/health
           docker logs api
+
+  mobile:
+    name: mobile (lint + types + tests + bundle)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test -- --ci
+      # Metro bundles the whole app like a phone build would; no device needed.
+      - run: npx expo export --platform android --output-dir "$RUNNER_TEMP/bundle"

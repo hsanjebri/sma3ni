@@ -9,13 +9,16 @@
 ## Screens
 | Screen | Content |
 |---|---|
-| Onboarding (3 steps) | What it does → how to share from WhatsApp (GIF) → privacy promise |
+| Onboarding (3 steps, first launch) | What it does → how to share from WhatsApp → privacy promise; each with an animation drawn in code (no GIF, works offline, mirrors in RTL) |
 | Home | Recent transcripts, "Pick audio file" button, tip on how to share |
 | Transcript | Text (Arabic/Arabizi toggle), copy, share, summary, translate, replies, "Correct" |
 | History | Search, swipe to delete |
 | Settings | Default script, auto-summary, language, donation opt-in, delete all, privacy policy |
 
 ## Getting audio into the app
+### Inside WhatsApp, not WhatsApp inside the app
+Phones don't let an app embed WhatsApp, and scraping WhatsApp Web or reading the screen breaks WhatsApp's terms, the store policies and users' privacy (`AGENTS.md` rule 7). The reverse is allowed: shared to Sma3ni, a voice note opens a **compact sheet on top of WhatsApp** with the transcript and Copy, so the user never leaves the chat. Android: a translucent share activity; iOS: the Share Extension's own UI.
+
 ### Android
 - Activity with intent filter:
   ```xml
